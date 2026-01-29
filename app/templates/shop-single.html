@@ -1,0 +1,579 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ product.title }} | Product Details{% endblock %}
+
+{% block content %}
+<main class="py-5 bg-light">
+  <div class="container">
+
+    <!-- 🧭 Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+        <li class="breadcrumb-item">
+          <a href="{% url 'category-products' product.category_id %}">
+            {{ product.category_name|default:"Category" }}
+          </a>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">{{ product.title }}</li>
+      </ol>
+    </nav>
+
+    <div class="row g-5 align-items-start">
+      <!-- Left: Product Images -->
+      <div class="col-lg-6 col-md-6">
+
+        <div class="card border-0 shadow-sm">
+
+          <!-- Main Image (Perfect Box, Centered, Fully Covered) -->
+          <div
+            class="position-relative overflow-hidden rounded zoom-container bg-light d-flex justify-content-center align-items-center"
+            style="height: 420px;">
+            <img id="mainImage" src="/media/{{ product.main_image }}"
+              class="img-fluid h-100 w-100 object-fit-contain p-3 rounded-4" alt="{{ product.title }}">
+          </div>
+
+          <!-- Thumbnails -->
+          <div class="d-flex flex-wrap justify-content-center gap-3 mt-4">
+
+            {% for img in images %}
+            <div class="border rounded-3 p-1 bg-white shadow-sm" style="width: 90px; height: 90px;">
+
+              <img src="/media/{{ img.image }}" onclick="changeImage(this.src, event)"
+                class="thumb-img w-100 h-100 object-fit-contain p-1 rounded-2 {% if forloop.first %}border border-warning{% endif %}"
+                alt="Thumbnail {{ forloop.counter }}">
+            </div>
+            {% empty %}
+            <small class="text-muted">No other images available</small>
+            {% endfor %}
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right: Product Details -->
+      <div class="col-lg-6 col-md-6">
+
+        <!-- 🏷️ Product Title -->
+        <h3 class="fw-bold mb-2">{{ product.title }}</h3>
+
+        <!-- 🏷️ Brand -->
+        {% if product.brand_name %}
+        <span class="badge bg-light text-dark border mb-2">
+          <i class="bi bi-tag-fill text-primary me-1"></i>{{ product.brand_name }}
+        </span>
+        {% endif %}
+
+        <!-- 🧭 Category / Subcategory -->
+        <p class="text-muted mb-2">
+          {{ product.category_name }}{% if product.subcategory_name %} / {{ product.subcategory_name }}{% endif %}
+        </p>
+
+        <!-- ⭐ Rating Summary -->
+        {% if avg_rating > 0 %}
+        <div class="d-flex align-items-center mb-3">
+          <div class="text-warning me-1">
+            {% for i in "12345"|make_list %}
+            {% if i|add:"0" <= avg_rating %} <i class="bi bi-star-fill"></i>
+              {% else %}
+              <i class="bi bi-star"></i>
+              {% endif %}
+              {% endfor %}
+          </div>
+          <small class="fw-semibold">{{ avg_rating }}/5</small>
+          <a href="#" class="text-decoration-none small ms-2 text-info" data-bs-toggle="offcanvas"
+            data-bs-target="#reviewsOffcanvas" aria-controls="reviewsOffcanvas">
+            ({{ total_reviews }} Reviews)
+          </a>
+        </div>
+        {% else %}
+        <a href="#" class="text-info small text-decoration-none mb-3 d-inline-block" data-bs-toggle="offcanvas"
+          data-bs-target="#reviewsOffcanvas" aria-controls="reviewsOffcanvas">
+          No ratings yet
+        </a>
+        {% endif %}
+
+        <!-- 💰 Price -->
+        <div class="d-flex align-items-center mb-3">
+          {% if product.sale_price %}
+          <h4 class="text-dark me-3 mb-0">₹{{ product.sale_price }}</h4>
+          <span class="text-decoration-line-through text-muted">₹{{ product.price }}</span>
+          {% else %}
+          <h4 class="text-dark mb-0">₹{{ product.price }}</h4>
+          {% endif %}
+        </div>
+
+        <p class="small text-success fw-semibold">In Stock</p>
+
+        <!-- 🛒 Add to Cart / Buy Buttons -->
+        <div class="d-flex flex-column gap-2 my-4">
+          <form id="cartForm" method="POST" onsubmit="return false;">
+            {% csrf_token %}
+            {% if product.stock <= 0 %} <button type="button" class="btn btn-secondary w-100" disabled>
+              <i class="bi bi-hourglass-split me-1"></i> Coming Soon
+              </button>
+              {% else %}
+              <button type="button" class="btn btn-warning" onclick="addToCart({{ product.id }})">
+                <i class="bi bi-cart-plus"></i> Add to Cart
+              </button>
+
+              <button type="button" class="btn btn-dark" onclick="buyNow({{ product.id }})">
+                <i class="bi bi-lightning-charge me-1"></i> Buy Now
+              </button>
+              {% endif %}
+          </form>
+        </div>
+        
+        <div class="card border-0 shadow-sm p-3" style="height: 265px; overflow-y: auto;">
+    <h5 class="fw-bold mb-3">Product Details</h5>
+
+    {% if grouped_attrs %}
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+            <tbody>
+
+                {% for pair in grouped_attrs %}
+                    <!-- First item always exists -->
+                    <tr>
+                        <th class="bg-light fw-semibold" style="width:30%;">
+                            {{ pair.0.field_name|capfirst }}
+                        </th>
+                        <td>{{ pair.0.field_value }}</td>
+                    </tr>
+
+                    <!-- Second item only if available -->
+                    {% if pair|length > 1 %}
+                    <tr>
+                        <th class="bg-light fw-semibold" style="width:30%;">
+                            {{ pair.1.field_name|capfirst }}
+                        </th>
+                        <td>{{ pair.1.field_value }}</td>
+                    </tr>
+                    {% endif %}
+
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+
+
+      </div>
+
+
+    </div>
+
+    <!-- Tabs Section -->
+    <div class="row mt-5">
+      <div class="col-12">
+        <ul class="nav nav-tabs" id="productTab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details"
+              type="button" role="tab">
+              Product Details
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab">
+              Information
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="seller-tab" data-bs-toggle="tab" data-bs-target="#seller" type="button"
+              role="tab">
+              Seller Info
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content border border-top-0 bg-white p-4 rounded-bottom shadow-sm">
+          <!-- 🧾 Product Details -->
+          <div class="tab-pane fade show active" id="details" role="tabpanel">
+            <p>{{ product.description|linebreaksbr|default:"No description available." }}</p>
+          </div>
+
+          <!-- 📊 Information Tab -->
+          <div class="tab-pane fade" id="info" role="tabpanel">
+            <h5 class="mb-3">Details</h5>
+            {% if grouped_attrs %}
+            <div class="table-responsive">
+              <table class="table table-bordered align-middle">
+                <tbody>
+                  {% for pair in grouped_attrs %}
+                  <tr>
+                    <th class="bg-light fw-semibold" style="width:20%;">{{ pair.0.field_name|capfirst }}</th>
+                    <td style="width:30%;">{{ pair.0.field_value }}</td>
+
+                    {% if pair|length > 1 %}
+                    <th class="bg-light fw-semibold" style="width:20%;">{{ pair.1.field_name|capfirst }}</th>
+                    <td style="width:30%;">{{ pair.1.field_value }}</td>
+                    {% else %}
+                    <th class="bg-light fw-semibold"></th>
+                    <td></td>
+                    {% endif %}
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <p class="text-muted">No additional product information available.</p>
+            {% endif %}
+          </div>
+
+
+          <!-- Seller Info -->
+          <div class="tab-pane fade" id="seller" role="tabpanel">
+            <p><strong>Seller Organization:</strong> {{ product.admin_org|default:"Verified Vendor" }}</p>
+            <p class="text-muted small mb-0">
+              All products are verified by <strong>{{ product.admin_org|default:"our platform" }}</strong> and
+              checked for quality
+              before approval.
+            </p>
+          </div>
+
+
+
+        </div>
+      </div>
+    </div>
+
+    <!-- 🛍️ Related Products -->
+    <div class="row mt-5">
+      <div class="col-12 mb-3">
+        <h4 class="fw-bold">Related Products</h4>
+        <hr>
+      </div>
+
+      <div class="row g-4 row-cols-xl-4 row-cols-lg-3 row-cols-md-3 row-cols-2">
+        {% for r in related_products %}
+        <div class="col">
+          <div class="card card-product h-100">
+            <div class="card-body text-center">
+              <a href="{% url 'view-product' r.id %}">
+                <img src="/media/{{ r.main_image }}" class="img-fluid rounded mb-2"
+                  style="height:200px;object-fit:cover;" alt="{{ r.title }}">
+              </a>
+              <h6 class="fw-semibold mt-2 mb-1 product-title">
+                <a href="{% url 'view-product' r.id %}" class="text-decoration-none text-dark">{{ r.title }}</a>
+              </h6>
+              <p class="text-muted small mb-1">{{ r.subcategory_name|default:r.category_name }}</p>
+              <div>
+                <span class="text-dark fw-semibold">₹{{ r.sale_price|default:r.price }}</span>
+                {% if r.sale_price %}
+                <span class="text-decoration-line-through text-muted small">₹{{ r.price }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <div class="text-center text-muted py-4">No related products found.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 🧾 Reviews Offcanvas (Right Side Panel) -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="reviewsOffcanvas" aria-labelledby="reviewsOffcanvasLabel">
+    <div class="offcanvas-header border-bottom">
+      <h5 id="reviewsOffcanvasLabel" class="mb-0">
+        <i class="bi bi-chat-left-text me-2 text-primary"></i>Customer Reviews
+      </h5>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      {% if reviews %}
+      {% for r in reviews %}
+      <div class="border-bottom pb-3 mb-3">
+        <div class="d-flex align-items-center mb-1">
+          <strong>{{ r.user_name }}</strong>
+          <div class="ms-2 text-warning small">
+            {% for i in "12345"|make_list %}
+            {% if i|add:"0" <= r.rating %} <i class="bi bi-star-fill"></i>
+              {% else %}
+              <i class="bi bi-star"></i>
+              {% endif %}
+              {% endfor %}
+          </div>
+        </div>
+        {% if r.comment %}
+        <p class="mb-1">{{ r.comment }}</p>
+        {% endif %}
+
+        {% if r.review_image %}
+        <div class="mt-2">
+          <img src="/media/{{ r.review_image }}" alt="User Review Image" class="img-thumbnail img-fluid"
+            style="max-width: 120px; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#reviewImageModal"
+            data-img="/media/{{ r.review_image }}">
+        </div>
+        {% endif %}
+
+
+        <small class="text-muted d-block mt-2">{{ r.created_at|date:"M d, Y" }}</small>
+
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="text-center text-muted py-4">
+        <i class="bi bi-emoji-neutral display-5 d-block mb-2"></i>
+        <p class="mb-0">No reviews yet for this product.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Review Image Modal -->
+  <div class="modal fade" id="reviewImageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow-sm">
+        <div class="modal-body p-0">
+          <img id="reviewModalImg" src="" class="img-fluid rounded w-100" alt="Review Image">
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<style>
+  /* 🖼️ Main zoom area */
+  .zoom-container {
+    position: relative;
+    overflow: hidden;
+    cursor: crosshair;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  }
+
+  .zoom-container img {
+    width: 100%;
+    height: auto;
+    transition: transform 0.15s ease-out;
+    transform-origin: center center;
+  }
+
+  /* 🖱️ Thumbnail styling */
+  .thumb-img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .thumb-img:hover,
+  .thumb-img.active-thumb {
+    border-color: #0d6efd;
+    transform: scale(1.05);
+  }
+
+  /* 💳 Product card hover (related section) */
+  .card-product {
+    border: 1px solid #f1f1f1;
+    transition: all 0.2s ease;
+  }
+
+  .card-product:hover {
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+    transform: translateY(-3px);
+  }
+
+  .product-title {
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+
+  .table-bordered th {
+    white-space: nowrap;
+    width: 1%;
+  }
+
+  .table-bordered td {
+    vertical-align: middle;
+  }
+</style>
+
+<script>
+  async function addToCart(productId) {
+    const csrfToken = '{{ csrf_token }}';
+    const res = await fetch(`/add-to-cart/${productId}/`, {
+      method: "POST",
+      headers: { "X-CSRFToken": csrfToken },
+    });
+
+    const data = await res.json();
+
+    // ✅ Handle status responses
+    if (data.status === "added") {
+      Swal.fire({
+        icon: "success",
+        title: "Added to Cart ",
+        text: data.message || "Product successfully added.",
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 2500,
+        timerProgressBar: true,
+        background: "#f6fff5",
+        iconColor: "#28a745"
+      });
+
+      updateCartCount(1);
+
+    } else if (data.status === "updated") {
+      Swal.fire({
+        icon: "info",
+        title: "Product Already In your Cart",
+        text: data.message || "Product quantity increased in your cart.",
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 2500,
+        timerProgressBar: true,
+        background: "#fff7e6",
+        iconColor: "#ff9900"
+      });
+
+    } else if (data.status === "login_required") {
+      Swal.fire({
+        icon: "warning",
+        title: "Please Login",
+        text: "You must be logged in to add items to your cart.",
+        confirmButtonText: "Login Now",
+        confirmButtonColor: "#ff9900"
+      }).then(result => {
+        if (result.isConfirmed) {
+          window.location.href = "{% url 'userlogin' %}";
+        }
+      });
+
+    } else {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: data.message || "Something went wrong. Try again later.",
+        confirmButtonColor: "#d33"
+      });
+    }
+  }
+
+  // ✅ Optional — live cart badge update
+  function updateCartCount(change) {
+    const badge = document.querySelector('.feather-shopping-bag + span.badge');
+    if (data.status === "added") {
+      Swal.fire({
+        icon: "success",
+        title: "Added to Cart 🛒",
+        text: data.message || "Product successfully added.",
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true,
+        background: "#f6fff5",
+        iconColor: "#28a745"
+      });
+
+      updateCartCount(1);  // ✅ increment cart badge
+    }
+
+  }
+</script>
+
+<script>
+  async function buyNow(productId) {
+    Swal.fire({
+      title: "Proceed to Checkout?",
+      text: "You’ll be redirected to payment and address selection.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Buy Now",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#28a745",
+      cancelButtonColor: "#6c757d"
+    }).then(result => {
+      if (result.isConfirmed) {
+        Swal.fire({
+          title: "Redirecting...",
+          text: "Preparing your order...",
+          icon: "info",
+          showConfirmButton: false,
+          allowOutsideClick: false,
+          timer: 1200,
+          timerProgressBar: true,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        // Redirect after short delay
+        setTimeout(() => {
+          window.location.href = `/buy-now/${productId}/`;
+        }, 1200);
+      }
+    });
+  }
+</script>
+
+<script>
+  // 🖼️ Smooth image zoom on hover
+  document.addEventListener("DOMContentLoaded", function () {
+    const zoomContainer = document.querySelector(".zoom-container");
+    const mainImage = document.getElementById("mainImage");
+
+    if (zoomContainer && mainImage) {
+      zoomContainer.addEventListener("mousemove", (e) => {
+        const rect = zoomContainer.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        mainImage.style.transformOrigin = `${x}% ${y}%`;
+        mainImage.style.transform = "scale(1.8)"; // Zoom level
+      });
+
+      zoomContainer.addEventListener("mouseleave", () => {
+        mainImage.style.transformOrigin = "center center";
+        mainImage.style.transform = "scale(1)";
+      });
+    }
+  });
+</script>
+
+<script>
+  // 🔄 Thumbnail image switcher
+  function changeImage(src, event) {
+    event.preventDefault();
+    const mainImage = document.getElementById("mainImage");
+    const allThumbs = document.querySelectorAll(".thumb-img");
+
+    // Update main image
+    if (mainImage) mainImage.src = src;
+
+    // Highlight active thumbnail
+    allThumbs.forEach(img => img.classList.remove("active-thumb"));
+    event.target.classList.add("active-thumb");
+  }
+</script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const modalImg = document.getElementById("reviewModalImg");
+    document.querySelectorAll("[data-bs-target='#reviewImageModal']").forEach(img => {
+      img.addEventListener("click", function () {
+        modalImg.src = this.getAttribute("data-img");
+      });
+    });
+  });
+</script>
+
+
+{% endblock %}

@@ -1,0 +1,349 @@
+{% extends 'superadmin/adminbase.html' %}
+{% load static %}
+{% block title %}Categories - Superadmin{% endblock %}
+
+{% block content %}
+<main class="main-content-wrapper">
+
+	<div class="container">
+		<!-- row -->
+		<div class="row mb-8">
+			<div class="col-md-12">
+				<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4">
+					<div>
+						<h2>Categories</h2>
+						<nav aria-label="breadcrumb">
+							<ol class="breadcrumb mb-0">
+								<li class="breadcrumb-item">
+									<a href="{% url 'admin-home' %}" class="text-inherit">Dashboard</a>
+								</li>
+								<li class="breadcrumb-item active" aria-current="page">Add Categories</li>
+							</ol>
+						</nav>
+					</div>
+					<div>
+						<a href="{% url 'add-category' %}" class="btn btn-primary">Add New Category</a>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="col-xl-12 col-12 mb-5">
+				<div class="card h-100 card-lg">
+					<div class="px-6 py-6">
+						<div class="row justify-content-between">
+							<div class="col-lg-4 col-md-6 col-12 mb-2 mb-md-0">
+								<form class="d-flex" role="search">
+									<input class="form-control" type="search" placeholder="Search Category"
+										aria-label="Search" />
+								</form>
+							</div>
+							<div class="col-xl-2 col-md-4 col-12">
+								<select class="form-select">
+									<option selected>Status</option>
+									<option value="Published">Published</option>
+									<option value="Unpublished">Unpublished</option>
+								</select>
+							</div>
+						</div>
+					</div>
+
+					<div class="card-body p-0">
+						<div class="table-responsive">
+							<table class="table table-centered mb-0 text-nowrap table-borderless table-with-checkbox">
+								<thead>
+									<tr>
+										<th></th>
+										<th>Icon</th>
+										<th>Name</th>
+										<th>Slug</th>
+										<th>Description</th>
+										<th>Created</th>
+										<th>Actions</th>
+									</tr>
+								</thead>
+
+								<tbody>
+									{% if categories %}
+									{% for category in categories %}
+									<tr class="align-middle">
+										<td></td>
+										<td>
+											{% if category.image %}
+											<img src="/media/{{ category.image }}" alt="{{ category.name }}"
+												class="icon-shape icon-sm rounded"
+												style="object-fit:cover;width:50px;height:50px;">
+											{% else %}
+											<img src="{% static 'assets/images/icons/placeholder-img.jpg' %}"
+												class="icon-shape icon-sm rounded"
+												style="object-fit:cover;width:50px;height:50px;">
+											{% endif %}
+										</td>
+										<td class="fw-semibold">
+											{{ category.name }}
+
+											{% if category.subcat_count > 0 %}
+											<button class="btn btn-sm btn-light border-0 toggle-subcat ms-2"
+												data-target="#subcat-{{ category.id }}" title="Show Subcategories">
+												<i class="bi bi-chevron-down"></i>
+												<span class="badge bg-secondary text-white">{{ category.subcat_count }}</span>
+											</button>
+											{% endif %}
+											
+
+										</td>
+										<td>{{ category.slug }}</td>
+										<td class="text-truncate" style="max-width:200px;"
+											title="{{ category.description }}">
+											{{ category.description }}
+										</td>
+										<td>{{ category.created_at|date:"Y-m-d" }}</td>
+										<td>
+											<div class="dropdown">
+												<a href="#" class="text-reset" data-bs-toggle="dropdown"
+													aria-expanded="false">
+													<i class="feather-icon icon-more-vertical fs-5"></i>
+												</a>
+												<ul class="dropdown-menu">
+													<li>
+														<a class="dropdown-item text-danger"
+															href="{% url 'delete-category' category.id %}"
+															onclick="return confirm('Delete this category and all its subcategories?');">
+															<i class="bi bi-trash me-2"></i>Delete
+														</a>
+													</li>
+													<li>
+														<a class="dropdown-item"
+															href="{% url 'edit-category' category.id %}">
+															<i class="bi bi-pencil-square me-2"></i>Edit
+														</a>
+													</li>
+													<li>
+														<a class="dropdown-item"
+															href="{% url 'add-subcategory' %}?parent={{ category.id }}">
+															<i class="bi bi-plus-circle me-2"></i>Add Subcategory
+														</a>
+													</li>
+													<li>
+  <a class="dropdown-item" href="{% url 'add-brand' %}?parent={{ category.id }}">
+    <i class="bi bi-plus-circle me-2"></i>Add Brand
+  </a>
+</li>
+
+
+												</ul>
+											</div>
+										</td>
+									</tr>
+
+									<!-- ✅ Collapsible subcategories -->
+									<tr id="subcat-{{ category.id }}" class="subcategory-row"
+										style="display: none; background: #f8f9fa;">
+										<td colspan="7" class="p-0">
+											<div class="p-3">
+												{% if subcategories %}
+												<table class="table mb-0 table-sm align-middle">
+													<thead class="bg-light">
+														<tr>
+															<th style="width: 30px;"></th>
+															<th>Name</th>
+															<th>Slug</th>
+															<th>Description</th>
+															<th>Actions</th>
+														</tr>
+													</thead>
+													<tbody>
+														{% for sub in subcategories %}
+														{% if sub.category_id == category.id %}
+														<tr>
+															<td>↳</td>
+															<td>{{ sub.name }}</td>
+															<td>{{ sub.slug }}</td>
+															<td class="text-truncate" style="max-width:200px;"
+																title="{{ sub.description }}">
+																{{ sub.description }}
+															</td>
+															<td>
+																<a href="{% url 'edit-subcategory' sub.id %}"
+																	class="btn btn-sm btn-outline-success me-1">
+																	<i class="bi bi-pencil"></i>
+																</a>
+																<a href="{% url 'delete-subcategory' sub.id %}"
+																	class="btn btn-sm btn-outline-danger"
+																	onclick="return confirm('Delete this subcategory?');">
+																	<i class="bi bi-trash"></i>
+																</a>
+															</td>
+														</tr>
+														{% endif %}
+														{% endfor %}
+													</tbody>
+												</table>
+												{% else %}
+												<p class="text-muted m-2">No subcategories found.</p>
+												{% endif %}
+											</div>
+										</td>
+									</tr>
+								
+        
+      
+
+
+     
+
+									{% endfor %}
+									{% else %}
+									<tr>
+										<td colspan="7" class="text-center text-muted py-4">
+											No categories found. <a href="{% url 'add-category' %}"
+												class="text-primary fw-semibold">Add one</a>.
+										</td>
+									</tr>
+									{% endif %}
+								</tbody>
+
+							</table>
+						</div>
+					</div>
+
+					<div
+						class="border-top d-flex justify-content-between align-items-md-center px-6 py-6 flex-md-row flex-column gap-4">
+						<span>Showing {{ categories|length }} categories</span>
+					</div>
+
+				</div>
+			</div>
+		</div>
+	</div>
+</main>
+
+<!-- ✅ Smooth Toggle Script -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // ✅ Toggle Subcategory Rows
+  const subcatToggles = document.querySelectorAll(".toggle-subcat");
+  subcatToggles.forEach(btn => {
+    btn.addEventListener("click", function () {
+      const targetId = this.dataset.target;
+      const targetRow = document.querySelector(targetId);
+      const icon = this.querySelector("i");
+
+      // collapse brand row if open
+      const brandRow = document.querySelector(`#brand-${targetId.split('-')[1]}`);
+      if (brandRow) brandRow.style.display = "none";
+
+      if (targetRow.style.display === "none" || targetRow.style.display === "") {
+        targetRow.style.display = "table-row";
+        icon.classList.remove("bi-chevron-down");
+        icon.classList.add("bi-chevron-up");
+      } else {
+        targetRow.style.display = "none";
+        icon.classList.remove("bi-chevron-up");
+        icon.classList.add("bi-chevron-down");
+      }
+    });
+  });
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const toggles = document.querySelectorAll(".toggle-brand");
+  const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]")?.value;
+
+  toggles.forEach(toggle => {
+    toggle.addEventListener("change", function () {
+      const brandId = this.dataset.id;
+
+      fetch(`/toggle-brand-status/${brandId}/`, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": csrfToken,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({})
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "success") {
+          this.checked = data.new_status; // ✅ sync toggle with DB
+          const msg = data.new_status
+            ? "✅ Brand and its products are now visible on the website."
+            : "🚫 Brand and its products are now hidden.";
+          console.log(msg);
+        } else {
+          alert(data.message || "Failed to update brand visibility.");
+        }
+      })
+      .catch(err => {
+        console.error("Error updating brand visibility:", err);
+        alert("Something went wrong while updating brand visibility.");
+      });
+    });
+  });
+});
+</script>
+
+<style>
+.badge {
+  font-size: 0.75rem;
+  transition: all 0.3s ease-in-out;
+}
+.badge.bg-success {
+  background-color: #28a745 !important;
+}
+.badge.bg-secondary {
+  background-color: #6c757d !important;
+}
+tr.inactive-brand {
+  opacity: 0.6;
+}
+
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const toggles = document.querySelectorAll(".toggle-brand");
+  const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]")?.value;
+
+  toggles.forEach(toggle => {
+    toggle.addEventListener("change", function () {
+      const brandId = this.dataset.id;
+      const row = this.closest("tr");
+      const badge = row.querySelector(".badge");
+
+      fetch(`/toggle-brand-status/${brandId}/`, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": csrfToken,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({})
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "success") {
+          this.checked = data.new_status;
+
+          if (badge) badge.remove(); // remove old badge
+          const newBadge = document.createElement("span");
+          newBadge.classList.add("badge", "ms-2");
+          newBadge.textContent = data.new_status ? "Active" : "Hidden";
+          newBadge.classList.add(data.new_status ? "bg-success" : "bg-secondary");
+          row.querySelector(".fw-semibold").appendChild(newBadge);
+        } else {
+          alert(data.message || "Failed to update brand visibility.");
+        }
+      })
+      .catch(err => {
+        console.error("Error updating brand visibility:", err);
+        alert("Something went wrong while updating brand visibility.");
+      });
+    });
+  });
+});
+</script>
+
+{% endblock %}

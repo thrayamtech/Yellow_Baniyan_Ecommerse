@@ -1,0 +1,204 @@
+{% extends 'superadmin/adminbase.html' %}
+{% load static %}
+{% block title %}Add Product - Superadmin{% endblock %}
+{% block content %}
+<main class="main-content-wrapper">
+   <!-- container -->
+   <div class="container">
+      <!-- row -->
+      <div class="row mb-8">
+         <div class="col-md-12">
+            <div class="d-md-flex justify-content-between align-items-center">
+               <!-- page header -->
+               <div>
+                  <h2>Add New Product</h2>
+                  <!-- breacrumb -->
+                  <nav aria-label="breadcrumb">
+                     <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{% url 'admin-home' %}" class="text-inherit">Dashboard</a>
+                        </li>
+                        <li class="breadcrumb-item"><a href="{% url 'products' %}" class="text-inherit">Product
+                              Categories</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'add-productcategory' category.id %}"
+                              class="text-inherit">Add
+                              Product by Category</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Add New Products </li>
+                     </ol>
+                  </nav>
+               </div>
+               <!-- button -->
+               <div>
+                  <a href="{% url 'add-productcategory' category.id %}" class="btn btn-light">Back to Product</a>
+               </div>
+            </div>
+         </div>
+      </div>
+      <!-- row -->
+      <div class="row">
+         <div class="col-lg-12 col-12">
+            <!-- card -->
+            <div class="card mb-6 card-lg">
+               <!-- card body -->
+               <div class="card-body p-6">
+                  <h4 class="mb-4 h5">Product Information</h4>
+
+                  <form method="POST" enctype="multipart/form-data">
+                     {% csrf_token %}
+                     <div class="row">
+                        <div class="mb-3 col-lg-6">
+                           <label class="form-label">Title</label>
+                           <input type="text" name="title" class="form-control" placeholder="Product Name" required />
+                        </div>
+
+                        <div class="mb-3 col-lg-6">
+                           <label class="form-label">Product Category</label>
+                           <input type="text" class="form-control" value="{{ category.name }}" readonly>
+                           <input type="hidden" name="category" value="{{ category.id }}">
+                        </div>
+
+                        <div class="mb-3 col-lg-6">
+                           <label class="form-label">Product Sub Category</label>
+                           <select class="form-select" name="subcategory">
+                              <option value="">Select Subcategory</option>
+                              {% for sub in subcategories %}
+                              <option value="{{ sub.id }}">{{ sub.name }}</option>
+                              {% endfor %}
+                           </select>
+                        </div>
+                       
+
+<div class="mb-3 col-lg-6">
+  <label class="form-label">Brand</label>
+  <select name="brand" id="brand" class="form-select">
+    <option value="">-- Select Brand --</option>
+    {% for brand in brands %}
+      <option value="{{ brand.id }}">{{ brand.name }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+
+                        <div class="mb-3 col-lg-6">
+                           <label class="form-label">Stock</label>
+                           <input type="number" name="stock" class="form-control" placeholder="Stock" required />
+                        </div>
+
+                        <div class="mb-3 col-lg-6">
+                           <label class="form-label">Regular Price</label>
+                           <input type="number" name="price" step="0.01" class="form-control" required />
+                        </div>
+
+                        <div class="mb-3 col-lg-6">
+                           <label class="form-label">Sale Price</label>
+                           <input type="number" name="sale_price" step="0.01" class="form-control" />
+                        </div>
+
+                        <div class="mb-3 col-lg-6">
+  <label class="form-label">Weight (in Kg)</label>
+  <input type="number" name="weight" class="form-control" placeholder="e.g. 0.5" min="0" step="0.01" required />
+</div>
+
+
+                        <div class="mb-3 col-lg-12 mt-3">
+                           <h4>Product Images</h4>
+                           <input type="file" name="images" multiple class="form-control" />
+                        </div>
+
+                        <div class="mb-3 col-lg-12 mt-4">
+                           <h4>Product Description</h4>
+                           <textarea name="description" id="descriptionInput" class="form-control" rows="6" placeholder="Product Description"></textarea>
+                        </div>
+
+                        <div class="mb-3 col-lg-12">
+                           <h4 class="mb-3 h5">Custom Fields</h4>
+
+                           <!-- container where fields appear -->
+                           <div id="customFields"></div>
+
+                           <!-- button to add new field -->
+                           <button type="button" id="addFieldBtn" class="btn btn-outline-primary mt-2 btn-sm">
+                              + Add Field
+                           </button>
+                        </div>
+
+
+                        <div class="mb-3 col-lg-12">
+                           <h4>Meta Data</h4>
+                           <input type="text" name="meta_title" class="form-control mb-2" placeholder="Meta Title">
+                           <textarea name="meta_description" class="form-control"
+                              placeholder="Meta Description"></textarea>
+                        </div>
+
+                        <div class="mb-3 col-lg-12">
+                           <div class="form-check form-switch">
+                              <input class="form-check-input" type="checkbox" name="is_vip" id="flexSwitchStock" />
+                              <label class="form-check-label" for="flexSwitchStock">Is VIP Product</label>
+                           </div>
+                        </div>
+
+                        <div class="d-grid mt-3">
+                           <button type="submit" class="btn btn-primary">Create Product</button>
+                        </div>
+                     </div>
+                  </form>
+               </div>
+            </div>
+         </div>
+      </div>
+</main>
+
+<script>
+   document.addEventListener("DOMContentLoaded", () => {
+      // Filter subcategories by selected category
+      const catSelect = document.getElementById("categorySelect");
+      const subSelect = document.getElementById("subcategorySelect");
+      catSelect.addEventListener("change", () => {
+         const catId = catSelect.value;
+         Array.from(subSelect.options).forEach(opt => {
+            opt.style.display = !opt.value || opt.dataset.category === catId ? "block" : "none";
+         });
+         subSelect.value = "";
+      });
+
+      // Rich text editor (Quill)
+      const quill = new Quill("#editor", { theme: "snow" });
+      const descInput = document.getElementById("descriptionInput");
+      document.querySelector("form").addEventListener("submit", () => {
+         descInput.value = quill.root.innerHTML;
+      });
+   });
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+  // ✅ Handle Add Custom Field
+  const addBtn = document.getElementById("addFieldBtn");
+  const fieldContainer = document.getElementById("customFields");
+
+  if (addBtn && fieldContainer) {
+    addBtn.addEventListener("click", function() {
+      const fieldRow = document.createElement("div");
+      fieldRow.classList.add("d-flex", "align-items-center", "gap-2", "mb-2");
+
+      fieldRow.innerHTML = `
+        <input type="text" name="field_name[]" class="form-control" placeholder="Field Name" required>
+        <input type="text" name="field_value[]" class="form-control" placeholder="Field Value" required>
+        <button type="button" class="btn btn-danger btn-sm removeField">&times;</button>
+      `;
+
+      fieldContainer.appendChild(fieldRow);
+    });
+
+    // ✅ Handle Remove Field
+    fieldContainer.addEventListener("click", function(e) {
+      if (e.target.classList.contains("removeField")) {
+        e.target.closest("div").remove();
+      }
+    });
+  }
+});
+</script>
+
+
+{% endblock %}

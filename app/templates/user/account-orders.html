@@ -1,0 +1,83 @@
+{% extends 'user/userbase.html' %}
+{% block title %}Your Orders - Account Setting{% endblock %}
+
+{% block content %}
+<div class="col-lg-9 col-md-8 col-12">
+  <div class="py-5 p-md-5">
+
+    <h2 class="mb-4 fw-semibold">Your Orders</h2>
+
+    {% if orders %}
+      {% for order in orders %}
+      <div class="card mb-4 border rounded-3 shadow-sm hover-shadow-sm">
+        <div class="card-body p-4">
+          <div class="d-flex flex-wrap align-items-start gap-3">
+            
+            <!-- Product Image -->
+            <div class="flex-shrink-0">
+              <img src="/media/{{ order.product_image }}" alt="{{ order.product_title }}"
+                   class="rounded border" width="100" height="100"
+                   style="object-fit: cover;">
+            </div>
+
+            <!-- Product Details -->
+            <div class="flex-grow-1">
+              <h5 class="fw-semibold mb-1">{{ order.product_title }}</h5>
+              <p class="text-muted small mb-2">
+                Order ID: <span class="fw-medium text-dark">#{{ order.order_id }}</span> •
+                {{ order.created_at|date:"M d, Y" }}
+              </p>
+
+              <!-- Status and Amount -->
+<div class="d-flex align-items-center gap-3 mb-2">
+  {% if order.tracking_status == "Delivered" %}
+    <span class="badge bg-success-subtle text-success">Delivered</span>
+  {% elif order.tracking_status == "Cancelled" %}
+    <span class="badge bg-danger-subtle text-danger">Cancelled</span>
+  {% elif order.tracking_status == "Out for Delivery" %}
+    <span class="badge bg-primary-subtle text-primary">Out for Delivery</span>
+  {% elif order.tracking_status == "Shipped" %}
+    <span class="badge bg-info-subtle text-info">Shipped</span>
+  {% elif order.tracking_status == "Packed" %}
+    <span class="badge bg-warning-subtle text-dark">Packed</span>
+  {% else %}
+    <span class="badge bg-secondary-subtle text-secondary">Order Placed</span>
+  {% endif %}
+  <span class="fw-bold text-dark">₹{{ order.total_amount }}</span>
+</div>
+
+
+              <!-- Action Buttons -->
+              <div class="d-flex flex-wrap gap-2 mt-2">
+                <a href="{% url 'track-order' order.order_id %}" class="btn btn-sm btn-outline-info">
+                  <i class="bi bi-truck"></i> Track Order
+                </a>
+
+                {% if order.payment_status == "success" %}
+                  {% if order.has_review %}
+                    <span class="badge bg-success-subtle text-success align-self-center">Rated ⭐</span>
+                  {% else %}
+                    <a href="{% url 'rate-product' order.order_id %}" class="btn btn-sm btn-outline-dark">
+                      Rate Product
+                    </a>
+                  {% endif %}
+                {% endif %}
+
+                <a href="#" class="btn btn-sm btn-outline-secondary">
+                  <i class="bi bi-file-earmark-text"></i> Invoice
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-box-seam fs-3 mb-3 d-block"></i>
+        <p>No orders found.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

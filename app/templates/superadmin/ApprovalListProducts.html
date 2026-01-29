@@ -1,0 +1,55 @@
+{% extends "superadmin/adminbase.html" %}
+{% load static %}
+{% block content %}
+<main class="main-content-wrapper">
+   <div class="container">
+      <h2>Pending Products by {{ admin_user.username }}</h2>
+      <a href="{% url 'approval-list' %}" class="btn btn-secondary mb-3">← Back to Admins</a>
+
+      {% if products %}
+      <div class="table-responsive">
+         <table class="table table-centered table-hover">
+            <thead class="bg-light">
+               <tr>
+                  <th>Image</th>
+                  <th>Product Name</th>
+                  <th>Category</th>
+                  <th>Brand</th>
+                  <th>Price</th>
+                  <th>Status</th>
+                  <th>Disapprove Reason</th>
+               </tr>
+            </thead>
+            <tbody>
+               {% for product in products %}
+               <tr>
+                  <td><img src="/media/{{ product.main_image }}" width="60" height="60" class="rounded"></td>
+                  <td>{{ product.title }}</td>
+                  <td>{{ product.category_name }}</td>
+                  <td>{{ product.brand_name|default:"—" }}</td>
+                  <td>₹{{ product.price }}</td>
+                  <td>
+                     {% if product.pending_approval %}
+                        <span class="badge bg-warning text-dark">Pending</span>
+                     {% elif product.approved %}
+                        <span class="badge bg-success">Approved</span>
+                     {% elif product.disapproved %}
+                        <span class="badge bg-danger">Disapproved</span>
+                     {% endif %}
+                  </td>
+                  <td>
+                     {% if product.disapprove_reason %}
+                     <small class="text-muted">Reason: {{ product.disapprove_reason }}</small>
+                     {% endif %}
+                  </td>
+               </tr>
+               {% endfor %}
+            </tbody>
+         </table>
+      </div>
+      {% else %}
+      <p>No products found for this admin.</p>
+      {% endif %}
+   </div>
+</main>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "user/userbase.html" %}
+{% load static %}
+{% block title %}My Rewards - Thrayam{% endblock %}
+{% block content %}
+<div class="col-lg-9 col-md-8 col-12">
+  <div class="py-6 p-md-6 p-lg-10">
+
+    <!-- SuperCoin Section -->
+    <div class="col-lg-9 col-md-8 col-12">
+  <div class="py-6 p-md-6 p-lg-10">
+    <div class="d-flex align-items-center mb-4">
+      <img src="{% static 'assets/images/icons/Supercoin.png' %}" width="50" class="me-2">
+      <h2 class="fw-bold mb-0">My Leaves</h2>
+    </div>
+
+    <div class="card p-4 mb-4">
+      <h4 class="fw-semibold mb-2">Total Leaves: <span class="text-warning">{{ total_coins }}</span></h4>
+      <p class="text-muted mb-0">Earn 1 coin for every ₹100 you spend.</p>
+    </div>
+
+    <h5 class="fw-bold mb-3">Recent Rewards</h5>
+    <table class="table table-striped align-middle">
+      <thead class="bg-light">
+        <tr>
+          <th>Date</th>
+          <th>Source</th>
+          <th>Leaves Earned</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if rewards %}
+          {% for r in rewards %}
+          <tr>
+            <td>{{ r.created_at|date:"M d, Y" }}</td>
+            <td>{{ r.source }}</td>
+            <td class="fw-semibold text-warning">+{{ r.coins_earned }}</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="3" class="text-center text-muted">No rewards yet.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+          
+
+    <!-- Coupons Section -->
+<div class="border-top pt-5">
+  <h4 class="fw-semibold mb-4">Your Rewards</h4>
+
+  <div class="row g-4">
+    {% if user_rewards %}
+      {% for reward in user_rewards %}
+        <div class="col-md-6 col-lg-4">
+          <div class="border rounded-3 p-4 bg-white shadow-sm h-100">
+            <div class="d-flex align-items-center mb-3">
+              <img src="{% static 'assets/images/icons/reward.png' %}" alt="reward" width="40" class="me-2">
+              <h6 class="mb-0 fw-semibold text-dark">
+                {{ reward.source|truncatechars:40 }}
+              </h6>
+            </div>
+            <p class="text-muted small mb-1">Issued on {{ reward.created_at|date:"M d, Y" }}</p>
+            {% if reward.promo_code %}
+              <span class="badge bg-success">Code: {{ reward.promo_code }}</span>
+            {% else %}
+              <span class="badge bg-secondary">No Code</span>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="text-muted">No rewards issued yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+
+  </div>
+</div>
+{% endblock %}

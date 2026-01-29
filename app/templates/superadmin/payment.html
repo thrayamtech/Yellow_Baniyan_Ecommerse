@@ -1,0 +1,139 @@
+{% extends "superadmin/adminbase.html" %}
+{% load static %}
+{% block title %}Upgrade Plan{% endblock %}
+{% block content %}
+
+<main class="main-content-wrapper">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="fw-bold">💳 Choose Your Plan</h2>
+      <p class="text-muted">Select a monthly plan that fits your business.</p>
+    </div>
+
+    <div class="row justify-content-center g-4">
+      {% for p in all_plans %}
+      <div class="col-md-4 col-sm-6">
+        <div class="card h-100 border-0 shadow-sm rounded-4 text-center">
+          <div class="card-body d-flex flex-column justify-content-between">
+            <div>
+              <h4 class="fw-bold text-primary mb-2">{{ p.plan_name }}</h4>
+              <h3 class="fw-semibold text-dark">
+                ₹{{ p.price|floatformat:2 }} <span class="fs-6 text-muted">/mo</span>
+              </h3>
+              <p class="text-muted mb-3">Up to <strong>{{ p.product_limit }}</strong> products</p>
+
+              <ul class="list-unstyled text-start mx-auto" style="max-width: 240px;">
+                {% if p.description %}
+                  {% for line in p.description.splitlines %}
+                  <li>✅ {{ line }}</li>
+                  {% endfor %}
+                {% else %}
+                  <li>✅ Upload limit: {{ p.product_limit }}</li>
+                  <li>✅ Email support</li>
+                  <li>✅ Access to analytics</li>
+                {% endif %}
+              </ul>
+            </div>
+            <div class="mt-4">
+              <!-- 🟢 Trigger the confirmation modal -->
+              <button type="button"
+                      class="btn btn-dark w-100 py-2 fw-semibold select-plan-btn"
+                      data-bs-toggle="modal"
+                      data-bs-target="#confirmPlanModal"
+                      data-id="{{ p.id }}"
+                      data-name="{{ p.plan_name }}"
+                      data-price="{{ p.price }}"
+                      data-limit="{{ p.product_limit }}">
+                Select {{ p.plan_name }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12 text-center text-muted">
+        <p>No plans available right now.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</main>
+
+<!-- ⚡ Confirm Plan Modal -->
+<div class="modal fade" id="confirmPlanModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg rounded-3 border-0">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold">Confirm Your Plan</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h4 id="planName" class="fw-bold text-primary"></h4>
+        <p class="fs-5 text-dark mb-1">₹<span id="planPrice"></span> /month</p>
+        <p class="text-muted small">Up to <span id="planLimit"></span> products</p>
+        <p class="text-secondary small">Make sure this plan suits your needs before proceeding with payment.</p>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <a href="#" id="confirmPayBtn" class="btn btn-success">Confirm & Pay</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.card:hover {
+  transform: translateY(-4px);
+  transition: 0.3s;
+}
+.modal-content {
+  animation: fadeIn 0.3s ease-in-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const modal = document.getElementById('confirmPlanModal');
+  const planName = document.getElementById('planName');
+  const planPrice = document.getElementById('planPrice');
+  const planLimit = document.getElementById('planLimit');
+  const confirmPayBtn = document.getElementById('confirmPayBtn');
+
+  let selectedPlanId = null;
+
+  modal.addEventListener('show.bs.modal', function (event) {
+    const button = event.relatedTarget;
+    selectedPlanId = button.getAttribute('data-id');
+    const name = button.getAttribute('data-name');
+    const price = button.getAttribute('data-price');
+    const limit = button.getAttribute('data-limit');
+
+    planName.textContent = name;
+    planPrice.textContent = price;
+    planLimit.textContent = limit;
+  });
+
+  confirmPayBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+
+    if (!selectedPlanId) {
+      alert("Please select a valid plan.");
+      return;
+    }
+
+    // ✅ Show message then redirect
+    alert("💳 Payment successful! Thank you for upgrading.");
+
+    // Redirect to backend Django view (this triggers DB update)
+    window.location.href = `/payment/success/${selectedPlanId}/`;
+  });
+});
+</script>
+
+
+{% endblock %}

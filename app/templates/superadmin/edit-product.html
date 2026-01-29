@@ -1,0 +1,185 @@
+{% extends "superadmin/adminbase.html" %}
+{% load static %}
+{% block title %}Edit Product - {{ product.title }}{% endblock %}
+{% block content %}
+
+<main class="main-content-wrapper">
+    <div class="container">
+        <div class="row mb-8">
+            <div class="col-md-12 d-flex justify-content-between align-items-center">
+                <h2>Edit Product</h2>
+                <a href="{% url 'add-productcategory' product.category_id %}" class="btn btn-secondary">Back</a>
+            </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row">
+                <div class="mb-3 col-lg-6">
+                    <label class="form-label">Product Title</label>
+                    <input type="text" name="title" value="{{ product.title }}" class="form-control" required>
+                </div>
+
+                <div class="mb-3 col-lg-6">
+                    <label class="form-label">Category</label>
+                    <input type="text" class="form-control" value="{{ category.name }}" readonly>
+                </div>
+
+                <div class="mb-3 col-lg-6">
+                    <label class="form-label">Subcategory</label>
+                    <select name="subcategory" class="form-select">
+                        {% for sub in subcategories %}
+                        <option value="{{ sub.id }}" {% if sub.id == product.subcategory_id %}selected{% endif %}>
+                            {{ sub.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3 col-lg-6">
+    <label class="form-label">Brand</label>
+    <select name="brand" class="form-select">
+        <option value="">-- Select Brand --</option>
+        {% for brand in brands %}
+        <option value="{{ brand.id }}" {% if brand.id == product.brand_id %}selected{% endif %}>
+            {{ brand.name }}
+        </option>
+        {% endfor %}
+    </select>
+</div>
+
+
+                <div class="mb-3 col-lg-6">
+                    <label class="form-label">Stock</label>
+                    <input type="number" name="stock" value="{{ product.stock }}" class="form-control">
+                </div>
+
+                <div class="mb-3 col-lg-6">
+                    <label class="form-label">Price</label>
+                    <input type="number" name="price" value="{{ product.price }}" step="0.01" class="form-control">
+                </div>
+
+                <div class="mb-3 col-lg-6">
+                    <label class="form-label">Sale Price</label>
+                    <input type="number" name="sale_price" value="{{ product.sale_price }}" step="0.01"
+                        class="form-control">
+                </div>
+
+                <div class="mb-3 col-lg-6">
+                    <label class="form-label">Weight (in Kg)</label>
+                    <input type="number" name="weight" value="{{ product.weight }}" class="form-control" min="0">
+                </div>
+                
+                <div class="mb-3 col-lg-12 mt-4">
+                    <h4>Product Description</h4>
+                    <textarea name="description" id="descriptionInput" class="form-control" rows="6"
+                        placeholder="Product Description">{{ product.description }}</textarea>
+                </div>
+            
+                <div class="mb-3 col-lg-12">
+  <label class="form-label">Current Images</label>
+  <div class="d-flex flex-wrap gap-3 mb-3" id="imagePreviewContainer">
+    {% for img in images %}
+    <div class="position-relative image-box" data-img-id="{{ img.id }}">
+      <img src="/media/{{ img.image }}" alt="" class="rounded border" width="100" height="100">
+      <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 delete-image-btn"
+        style="border-radius:50%;width:25px;height:25px;padding:0;">
+        <i class="bi bi-trash"></i>
+      </button>
+      <input type="hidden" name="keep_images[]" value="{{ img.id }}">
+    </div>
+    {% empty %}
+    <p class="text-muted">No images uploaded.</p>
+    {% endfor %}
+  </div>
+
+  <label class="form-label mt-3">Upload New Images</label>
+  <input type="file" name="images" multiple class="form-control">
+</div>
+
+        
+
+
+                <div class="mb-3 col-lg-12">
+                    <h4>Custom Fields</h4>
+                    <div id="customFields">
+                        {% for attr in attributes %}
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <input type="text" name="field_name[]" value="{{ attr.field_name }}" class="form-control"
+                                placeholder="Field Name">
+                            <input type="text" name="field_value[]" value="{{ attr.field_value }}" class="form-control"
+                                placeholder="Field Value">
+                            <button type="button" class="btn btn-danger btn-sm removeField">&times;</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" id="addFieldBtn" class="btn btn-outline-primary btn-sm mt-2">+ Add
+                        Field</button>
+                </div>
+
+                <div class="mb-3 col-lg-12">
+                    <label class="form-label">Meta Title</label>
+                    <input type="text" name="meta_title" value="{{ product.meta_title }}" class="form-control">
+                </div>
+
+                <div class="mb-3 col-lg-12">
+                    <label class="form-label">Meta Description</label>
+                    <textarea name="meta_description" class="form-control"
+                        rows="3">{{ product.meta_description }}</textarea>
+                </div>
+
+                <div class="d-grid mt-4">
+                    <button type="submit" class="btn btn-primary">Update Product</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</main>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // ✅ Quill editor
+        const quill = new Quill("#editor", { theme: "snow" });
+        const descInput = document.getElementById("descriptionInput");
+        document.querySelector("form").addEventListener("submit", function () {
+            descInput.value = quill.root.innerHTML;
+        });
+
+        // ✅ Add/Remove custom field logic
+        const addBtn = document.getElementById("addFieldBtn");
+        const container = document.getElementById("customFields");
+
+        addBtn.addEventListener("click", () => {
+            const div = document.createElement("div");
+            div.classList.add("d-flex", "align-items-center", "gap-2", "mb-2");
+            div.innerHTML = `
+            <input type="text" name="field_name[]" class="form-control" placeholder="Field Name">
+            <input type="text" name="field_value[]" class="form-control" placeholder="Field Value">
+            <button type="button" class="btn btn-danger btn-sm removeField">&times;</button>
+        `;
+            container.appendChild(div);
+        });
+
+        container.addEventListener("click", e => {
+            if (e.target.classList.contains("removeField")) e.target.closest("div").remove();
+        });
+
+        
+    });
+</script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".delete-image-btn").forEach(btn => {
+      btn.addEventListener("click", function () {
+        const box = this.closest(".image-box");
+        box.style.display = "none";
+        const hidden = box.querySelector("input[name='keep_images[]']");
+        if (hidden) hidden.remove();
+      });
+    });
+  });
+</script>
+
+
+
+{% endblock %}

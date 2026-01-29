@@ -1,0 +1,130 @@
+{% extends 'superadmin/adminbase.html' %}
+{% load static %}
+{% block title %}Add Sellers / Admins - Superadmin{% endblock %}
+{% block content %}
+
+<main class="main-content-wrapper">
+	<div class="container">
+		<div class="row mb-8">
+			<div class="col-md-12">
+				<div>
+					<h2>Create Admin / Seller</h2>
+					<!-- breacrumb -->
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb mb-0">
+							<li class="breadcrumb-item"><a href="{% url 'admin-home' %}"
+									class="text-inherit">Dashboard</a></li>
+							<li class="breadcrumb-item"><a href="{% url 'sellers' %}" class="text-inherit">Admin /
+									Seller</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Create Admin / Seller</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-12">
+				<div class="card shadow border-0">
+					<div class="card-body d-flex flex-column gap-8 p-7">
+
+						<form class="row g-3 needs-validation" method="post" enctype="multipart/form-data" novalidate>
+							{% csrf_token %}
+							<div
+								class="d-flex flex-column flex-md-row align-items-center mb-4 file-input-wrapper gap-2">
+								<div>
+									<img class="image avatar avatar-lg rounded-3"
+										src="{% static 'assets/images/docs/placeholder-img.jpg' %}" alt="Image" />
+								</div>
+
+								<div class="file-upload btn btn-light ms-md-4">
+									<input type="file"
+										class="file-input opacity-0 position-absolute top-0 start-0 w-100 h-100"
+										name="photo" />
+									Upload Photo
+								</div>
+
+								<span class="ms-2">JPG, GIF or PNG. 1MB Max.</span>
+							</div>
+							<div class="d-flex flex-column gap-4">
+								<h3 class="mb-0 h6">Admin / seller Information</h3>
+
+								<div class="col-lg-6 col-12">
+									<div>
+										<!-- input -->
+										<label for="creatCustomerName" class="form-label">
+											Name
+											<span class="text-danger">*</span>
+										</label>
+										<input type="text" class="form-control" id="creatCustomerName"
+											placeholder="Customer Name" name="name" required />
+										<div class="invalid-feedback">Please enter customer name</div>
+									</div>
+								</div>
+								<div class="col-lg-6 col-12">
+									<div>
+										<!-- input -->
+										<label for="creatCustomerEmail" class="form-label">
+											Email
+											<span class="text-danger">*</span>
+										</label>
+										<input type="email" class="form-control" id="creatCustomerEmail"
+											placeholder="Email Address" name="email" required />
+										<div class="invalid-feedback">Please enter email</div>
+									</div>
+								</div>
+								<div class="col-lg-6 col-12">
+									<div>
+										<!-- input -->
+										<label for="creatCustomerPhone" class="form-label">Phone</label>
+										<input type="text" class="form-control" id="creatCustomerPhone"
+											placeholder="Number" name="phone" required />
+										<div class="invalid-feedback">Please enter phone</div>
+									</div>
+								</div>
+
+								<div class="col-lg-6 col-12">
+									<label class="form-label" for="creatCustomerDate">Joining Date</label>
+									<input type="text" class="form-control flatpickr" id="creatCustomerDate"
+										placeholder="dd/mm/yyyy" name="joining_date" required />
+									<div class="invalid-feedback">Please enter date</div>
+								</div>
+
+								<div class="col-lg-6 col-12">
+									<label class="form-label" for="creatCustomerDate">Password</label>
+									<input type="text" class="form-control" id="creatCustomerDate"
+										placeholder="Password" name="password" required />
+									<div class="invalid-feedback">Please enter password</div>
+								</div>
+
+								<div class="col-lg-6 col-12">
+									<label class="form-label" for="creatCustomerDate">Organization Name</label>
+									<input type="text" class="form-control" id="creatCustomerDate"
+										placeholder="Organization Name" name="organization" required />
+									<div class="invalid-feedback">Please enter organization name</div>
+								</div>
+								<div class="col-12">
+									<div>
+										<!-- input -->
+										<label for="creatCustomerAddress" class="form-label">Address</label>
+										<textarea class="form-control" id="creatCustomerAddress" rows="3"
+											placeholder="Customer Address" name="address"></textarea>
+									</div>
+								</div>
+								<div>
+									<div class="col-12 mt-3">
+										<div class="d-flex flex-column flex-md-row gap-2">
+											<button class="btn btn-primary" type="submit">Create Admin / Seller</button>
+											<button class="btn btn-secondary" type="reset">Reset</button>
+										</div>
+									</div>
+								</div>
+
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</main>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends 'user/userbase.html' %}
+{% load static %}
+{% block title %}My Profile Account Settings{% endblock %}
+{% block content %}
+
+<div class="col-lg-9 col-md-8 col-12">
+  <div class="py-6 p-md-6 p-lg-10">
+    <div class="mb-6">
+      <h2 class="mb-0">Account Setting</h2>
+    </div>
+
+    <!-- Account details -->
+    <div>
+      <h5 class="mb-4">Account details</h5>
+      <div class="row">
+        <div class="col-lg-5">
+          <!-- profile update form -->
+          <form method="post" action="{% url 'update_profile' %}">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label">First name</label>
+              <input name="first_name" type="text" class="form-control" placeholder="First name"
+                     value="{{ user.first_name|default:'' }}" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Last name</label>
+              <input name="last_name" type="text" class="form-control" placeholder="Last name"
+                     value="{{ user.last_name|default:'' }}" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Email</label>
+              <input name="email" type="email" class="form-control" placeholder="example@gmail.com"
+                     value="{{ user.email|default:'' }}" />
+            </div>
+            <div class="mb-5">
+              <label class="form-label">Phone</label>
+              <input name="phone" type="text" class="form-control" placeholder="Phone number"
+                     value="{{ user.phone|default:'' }}" />
+            </div>
+            <div class="mb-3">
+              <button type="submit" class="btn btn-primary">Save Details</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-10" />
+
+    <!-- Password -->
+    <div class="pe-lg-14">
+      <h5 class="mb-4">Password</h5>
+
+      <form method="post" action="{% url 'change_password' %}" class="row row-cols-1 row-cols-lg-2">
+        {% csrf_token %}
+        <div class="mb-3 col">
+          <label class="form-label">New Password</label>
+          <input name="new_password" type="password" class="form-control" placeholder="New password" />
+        </div>
+        <div class="mb-3 col">
+          <label class="form-label">Confirm New Password</label>
+          <input name="confirm_password" type="password" class="form-control" placeholder="Confirm new password" />
+        </div>
+        <div class="mb-3 col">
+          <label class="form-label">Current Password</label>
+          <input name="current_password" type="password" class="form-control" placeholder="Current password" required />
+        </div>
+
+        <div class="col-12 mt-3">
+          <button type="submit" class="btn btn-primary">Save Password</button>
+        </div>
+      </form>
+    </div>
+
+    <hr class="my-10" />
+
+    <!-- Delete account -->
+    <div>
+      <h5 class="mb-4">Delete Account</h5>
+      <p class="mb-2">Would you like to delete your account?</p>
+      <p class="mb-3">Deleting your account will remove associated data (orders, cart, addresses, etc.). This action is irreversible.</p>
+
+      <form method="post" action="{% url 'delete_account' %}" onsubmit="return confirm('Are you sure you want to permanently delete your account? This cannot be undone.');">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">Enter current password to confirm</label>
+          <input name="current_password" type="password" class="form-control" placeholder="Current password" required />
+        </div>
+        <button type="submit" class="btn btn-outline-danger">I want to delete my account</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

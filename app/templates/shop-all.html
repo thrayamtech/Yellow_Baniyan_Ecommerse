@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}All Products{% endblock %}
+{% block content %}
+
+<main>
+  <div class="mt-8 mb-lg-14 mb-8">
+    <div class="container">
+      <div class="row gx-10">
+        <!-- Sidebar -->
+        <aside class="col-lg-3 col-md-4 mb-6 mb-md-0">
+          <div class="offcanvas offcanvas-start offcanvas-collapse w-md-50" tabindex="-1" id="offcanvasCategory"
+            aria-labelledby="offcanvasCategoryLabel">
+            <div class="offcanvas-header d-lg-none">
+              <h5 class="offcanvas-title" id="offcanvasCategoryLabel">Categories</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body ps-lg-2 pt-lg-0">
+              <!-- Categories Sidebar -->
+              <div class="mb-8">
+                <h5 class="mb-3">All Categories</h5>
+                <ul class="nav flex-column" id="allCategoriesAccordion">
+                  {% for cat in categories %}
+                  <li class="nav-item border-bottom mb-2">
+                    <a class="nav-link collapsed d-flex justify-content-between align-items-center"
+                       data-bs-toggle="collapse"
+                       href="#cat{{ cat.id }}"
+                       aria-expanded="false"
+                       aria-controls="cat{{ cat.id }}">
+                       {{ cat.name }}
+                       <i class="feather-icon icon-chevron-right"></i>
+                    </a>
+
+                    <div id="cat{{ cat.id }}" class="collapse" data-bs-parent="#allCategoriesAccordion">
+                      <ul class="nav flex-column ms-3 my-2">
+                        {% for sub in subcategories %}
+                          {% if sub.category_id == cat.id %}
+                            <li class="nav-item">
+                              <a href="?cat={{ cat.id }}&sub={{ sub.id }}" class="nav-link small">
+                                {{ sub.name }}
+                              </a>
+                            </li>
+                          {% endif %}
+                        {% empty %}
+                          <li class="nav-item text-muted small ms-3">No subcategories</li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Product Grid -->
+        <section class="col-lg-9 col-md-12">
+          <!-- Header -->
+          <div class="card mb-4 bg-light border-0">
+            <div class="card-body p-9">
+              <h2 class="mb-0 fs-1">All Products</h2>
+              <p class="text-muted small mb-0">Browse every product available on our store.</p>
+            </div>
+          </div>
+
+          <!-- Toolbar -->
+          <div class="d-lg-flex justify-content-between align-items-center">
+            <p class="mb-0 text-muted"><span class="text-dark">{{ total }}</span> products found</p>
+          </div>
+
+          <!-- Product Grid -->
+          <div class="row g-4 row-cols-xl-4 row-cols-lg-3 row-cols-md-3 row-cols-2 mt-2">
+            {% for product in products %}
+            <div class="col">
+              <div class="card card-product h-100">
+                <div class="card-body d-flex flex-column justify-content-between">
+                  <div class="text-center position-relative">
+                    <div class="position-absolute top-0 start-0">
+                      {% if product.stock <= 0 %}
+                        <span class="badge bg-secondary">Out of Stock</span>
+                      {% elif product.sale_price and product.sale_price|floatformat:2 < product.price|floatformat:2 %}
+                        <span class="badge bg-danger">Sale</span>
+                      {% endif %}
+                    </div>
+
+                    <a href="{% url 'view-product' product.id %}">
+                      <img src="/media/{{ product.main_image }}" alt="{{ product.title }}"
+                           class="mb-3 img-fluid rounded" style="height:220px; object-fit:cover;">
+                    </a>
+
+                    <div class="card-product-action">
+                      <a href="javascript:void(0);" class="btn-action" onclick="addToWishlist({{ product.id }})" title="Add to Wishlist">
+                        <i class="bi bi-heart"></i>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div class="text-small mb-1">
+                    <small class="text-muted">{{ product.category_name }} › {{ product.subcategory_name|default:"General" }}</small>
+                  </div>
+
+                  <h6 class="fw-semibold text-truncate">
+                    <a href="{% url 'view-product' product.id %}" class="text-dark">{{ product.title }}</a>
+                  </h6>
+
+                  <div class="d-flex justify-content-between align-items-center mt-2">
+                    <div>
+                      <span class="text-dark">₹{{ product.sale_price|default:product.price }}</span>
+                      {% if product.sale_price %}
+                        <span class="text-decoration-line-through text-muted">₹{{ product.price }}</span>
+                      {% endif %}
+                    </div>
+                    <div>
+                      {% if product.stock <= 0 %}
+                        <button class="btn btn-secondary btn-sm" disabled>Out of Stock</button>
+                      {% else %}
+                        <button class="btn btn-primary btn-sm" onclick="addToCart({{ product.id }})">Add</button>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center text-muted py-5">
+              <h5>No products found.</h5>
+            </div>
+            {% endfor %}
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</main>
+
+<style>
+   /* ✅ Maintain uniform product card size */
+   .card.card-product {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+   }
+
+   .card.card-product .card-body {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+   }
+
+   /* ✅ Fix inconsistent image height */
+   .card.card-product img {
+      width: 100%;
+      height: 220px;
+      /* adjust height as needed (180–250px recommended) */
+      object-fit: cover;
+      border-radius: 0.25rem;
+   }
+
+   /* ✅ Consistent button area alignment */
+   .card.card-product .btn {
+      min-width: 70px;
+   }
+
+   /* ✅ Equal spacing between cards */
+   .row .col {
+      display: flex;
+   }
+
+.product-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  width: 100%;
+  cursor: pointer;
+}
+
+/* 🎨 Custom Bootstrap Tooltip Styling */
+.custom-tooltip.bs-tooltip-top .tooltip-arrow::before {
+  border-top-color: #fff !important;
+}
+.custom-tooltip.bs-tooltip-bottom .tooltip-arrow::before {
+  border-bottom-color: #fff !important;
+}
+.custom-tooltip .tooltip-inner {
+  background-color: #fff !important;   /* white tooltip background */
+  color: #222 !important;              /* dark readable text */
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  padding: 6px 10px;
+  max-width: 250px;
+  text-align: center;
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl, {
+      customClass: 'custom-tooltip',
+      placement: 'top',     // You can use 'bottom', 'left', or 'right'
+      delay: { show: 150, hide: 50 }
+    });
+  });
+});
+</script>
+
+<script>
+async function addToCart(productId) {
+  const csrfToken = '{{ csrf_token }}';
+  const res = await fetch(`/add-to-cart/${productId}/`, {
+    method: "POST",
+    headers: { "X-CSRFToken": csrfToken },
+  });
+
+  const data = await res.json();
+
+  // ✅ Handle status responses
+  if (data.status === "added") {
+    Swal.fire({
+      icon: "success",
+      title: "Added to Cart ",
+      text: data.message || "Product successfully added.",
+      toast: true,
+      position: "top-end",
+      showConfirmButton: false,
+      timer: 2500,
+      timerProgressBar: true,
+      background: "#f6fff5",
+      iconColor: "#28a745"
+    });
+
+    updateCartCount(1);
+
+  } else if (data.status === "updated") {
+    Swal.fire({
+      icon: "info",
+      title: "Product Already In your Cart",
+      text: data.message || "Product quantity increased in your cart.",
+      toast: true,
+      position: "top-end",
+      showConfirmButton: false,
+      timer: 2500,
+      timerProgressBar: true,
+      background: "#fff7e6",
+      iconColor: "#ff9900"
+    });
+
+  } else if (data.status === "login_required") {
+    Swal.fire({
+      icon: "warning",
+      title: "Please Login",
+      text: "You must be logged in to add items to your cart.",
+      confirmButtonText: "Login Now",
+      confirmButtonColor: "#ff9900"
+    }).then(result => {
+      if (result.isConfirmed) {
+        window.location.href = "{% url 'userlogin' %}";
+      }
+    });
+
+  } else {
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: data.message || "Something went wrong. Try again later.",
+      confirmButtonColor: "#d33"
+    });
+  }
+}
+
+// ✅ Optional — live cart badge update
+function updateCartCount(change) {
+  const badge = document.querySelector('.feather-shopping-bag + span.badge');
+  if (data.status === "added") {
+    Swal.fire({
+      icon: "success",
+      title: "Added to Cart 🛒",
+      text: data.message || "Product successfully added.",
+      toast: true,
+      position: "top-end",
+      showConfirmButton: false,
+      timer: 1500,
+      timerProgressBar: true,
+      background: "#f6fff5",
+      iconColor: "#28a745"
+    });
+
+    updateCartCount(1);  // ✅ increment cart badge
+}
+
+}
+</script>
+
+<!-- Wishlist -->
+ <script>
+async function addToWishlist(productId) {
+  const csrfToken = '{{ csrf_token }}';
+  const res = await fetch(`/add-to-wishlist/${productId}/`, {
+    method: "POST",
+    headers: { "X-CSRFToken": csrfToken }
+  });
+  const data = await res.json();
+
+  if (data.status === "added") {
+    Swal.fire({
+      icon: "success",
+      title: "Added to Wishlist ❤️",
+      text: data.message || "Product added successfully.",
+      toast: true,
+      position: "top-end",
+      showConfirmButton: false,
+      timer: 2000,
+      timerProgressBar: true,
+      background: "#fff5f8",
+      iconColor: "#ff4081"
+    });
+    updateWishlistCount(1);
+  }
+  else if (data.status === "exists") {
+    Swal.fire({
+      icon: "info",
+      title: "Already in Wishlist",
+      text: "This product is already saved.",
+      toast: true,
+      position: "top-end",
+      showConfirmButton: false,
+      timer: 2000,
+      background: "#fdf6ec",
+      iconColor: "#f39c12"
+    });
+  }
+  else if (data.status === "login_required") {
+    Swal.fire({
+      icon: "warning",
+      title: "Login Required",
+      text: "Please login to use wishlist.",
+      confirmButtonText: "Login Now",
+      confirmButtonColor: "#ff9900"
+    }).then(res => {
+      if (res.isConfirmed) window.location.href = "{% url 'userlogin' %}";
+    });
+  }
+}
+
+function updateWishlistCount(change) {
+  const badge = document.getElementById("wishlistBadge");
+  if (badge) {
+    let count = parseInt(badge.textContent) || 0;
+    badge.textContent = Math.max(0, count + change);
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends 'superadmin/adminbase.html' %}
+{% load static %}
+{% block title %}Alert Settings - Superadmin{% endblock %}
+{% block content %}
+
+<main class="main-content-wrapper">
+  <div class="container">
+    <div class="row mb-5">
+      <div class="col-md-12">
+        <h2>Admin Inactivity Alert Settings</h2>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'admin-home' %}" class="text-inherit">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Alert Settings</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-lg-8 col-md-10 mx-auto">
+        <div class="card shadow-sm border-0">
+          <div class="card-body">
+            <form method="POST">
+              {% csrf_token %}
+
+              <div class="mb-4">
+                <label class="form-label fw-semibold">Alert After (Hours)</label>
+                <input type="number" name="hours" class="form-control" value="{{ settings.alert_after_hours }}" required>
+                <small class="text-muted">Example: 4 means an email alert will be sent if an admin doesn't open an order within 4 hours.</small>
+              </div>
+
+              <div class="mb-4">
+                <label class="form-label fw-semibold">Email Subject</label>
+                <input type="text" name="subject" class="form-control" value="{{ settings.subject }}" required>
+              </div>
+
+              <div class="mb-4">
+                <label class="form-label fw-semibold">Email Message Template</label>
+                <textarea name="message" class="form-control" rows="6" required>{{ settings.message }}</textarea>
+               <small class="text-danger d-block mt-2">
+  You can use these placeholders: <br>
+  <code>&#123;&#123; admin_name &#125;&#125;</code> → Admin’s name<br>
+  <code>&#123;&#123; order_id &#125;&#125;</code> → Order number<br>
+  <code>&#123;&#123; hours &#125;&#125;</code> → Hour limit<br>
+</small>
+
+
+
+              </div>
+
+              <div class="text-end">
+                <button type="submit" class="btn btn-primary px-4">Save Settings</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="alert alert-info mt-4">
+  <h6 class="fw-bold mb-2">Live Alert Preview</h6>
+  <p><strong>Subject:</strong> <span id="preview-subject"></span></p>
+  <p><strong>Message:</strong></p>
+  <pre id="preview-message" class="bg-light p-2 rounded" style="white-space: pre-wrap;"></pre>
+  <small class="text-muted d-block mt-2">
+    This preview automatically replaces <code>{{ admin_name }}</code>, <code>{{ order_id }}</code>, and <code>{{ hours }}</code> placeholders.
+  </small>
+</div>
+
+      </div>
+    </div>
+  </div>
+</main>
+
+
+{% verbatim %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const subjectInput = document.querySelector("input[name='subject']");
+  const messageInput = document.querySelector("textarea[name='message']");
+  const previewSubject = document.getElementById("preview-subject");
+  const previewMessage = document.getElementById("preview-message");
+
+  function updatePreview() {
+    previewSubject.textContent = subjectInput.value || "(No subject)";
+    let msg = messageInput.value || "(No message)";
+    msg = msg.replace(/{{\s*admin_name\s*}}/g, "Nithin (Sample Admin)")
+             .replace(/{{\s*order_id\s*}}/g, "#245")
+             .replace(/{{\s*hours\s*}}/g, "4");
+    previewMessage.textContent = msg;
+  }
+
+  subjectInput.addEventListener("input", updatePreview);
+  messageInput.addEventListener("input", updatePreview);
+  updatePreview();
+});
+</script>
+{% endverbatim %}
+
+
+{% endblock %}

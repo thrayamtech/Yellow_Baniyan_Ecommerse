@@ -1,0 +1,128 @@
+{% extends 'superadmin/adminbase.html' %}
+{% load custom_tags %}
+{% block title %}Manage Shipping & Rewards{% endblock %}
+{% block content %}
+
+<main class="main-content-wrapper">
+<div class="container mt-4">
+  <h2 class="mb-4">Manage Shipping & Rewards</h2>
+
+  <!-- SHIPPING COST -->
+  <div class="card mb-5 shadow-sm">
+    <div class="card-header bg-primary text-white">Shipping Cost</div>
+    <div class="card-body">
+      <form method="POST" class="d-flex align-items-end gap-3 flex-wrap">
+        {% csrf_token %}
+        <input type="hidden" name="update_shipping" value="1">
+        <div>
+          <label class="form-label fw-bold">Cost per KG (₹)</label>
+          <input type="number" step="0.01" name="cost_per_kg" class="form-control"
+                 value="{{ shipping.cost_per_kg }}" required>
+        </div>
+        <div>
+          <button type="submit" class="btn btn-success mt-4">Update</button>
+        </div>
+      </form>
+
+      <form method="POST" class="mt-3">
+        {% csrf_token %}
+        <button name="delete_shipping" class="btn btn-danger btn-sm"
+                onclick="return confirm('Reset shipping cost to 0?')">
+          Delete / Reset
+        </button>
+      </form>
+    </div>
+  </div>
+
+ <!-- REWARDS SECTION -->
+<div class="card shadow-sm">
+  <div class="card-header bg-secondary text-white">Rewards Template</div>
+  <div class="card-body">
+    <form method="POST" enctype="multipart/form-data" class="mb-3">
+      {% csrf_token %}
+      <input type="hidden" name="upload_rewards" value="1">
+      <div class="row">
+        <div class="col-md-8">
+          <label class="form-label fw-bold">Upload Reward Excel</label>
+          <input type="file" name="rewards_file" class="form-control" required>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">Upload Rewards</button>
+        </div>
+      </div>
+    </form>
+
+<form method="POST" class="d-flex align-items-center mt-3">
+  {% csrf_token %}
+  <div class="flex-grow-1">
+    <label class="form-label fw-semibold">Select Active Template</label>
+    <select name="active_template" class="form-select">
+      {% for t in all_templates %}
+        <option value="{{ t.id }}" {% if t.is_active %}selected{% endif %}>
+          {{ t.template_name }} {% if t.is_active %}(Active){% endif %}
+        </option>
+      {% empty %}
+        <option disabled>No templates uploaded yet</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" name="set_active" class="btn btn-success ms-2" style="height: fit-content;">
+    Set Active
+  </button>
+</form>
+
+<!-- Your existing reward table -->
+<h6 class="fw-bold mt-4">Active Template: {{ template.template_name }}</h6>
+
+
+    {% if template %}
+    <div class="table-responsive mt-3">
+      
+      <table class="table table-bordered table-striped">
+        <thead class="table-light">
+          <tr>
+            {% for c in fields %}<th>{{ c|capfirst }}</th>{% endfor %}
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rewards_data %}
+          <tr>
+            {% for field in fields %}
+              <td>{{ row|get_item:field }}</td>
+            {% endfor %}
+            <td>
+              <a href="?delete_id={{ row.id }}" class="btn btn-sm btn-danger"
+   onclick="return confirm('Delete this reward?')">Delete</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="{{ fields|length|add:1 }}" class="text-center">No rewards found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info mt-3">No reward template uploaded yet.</div>
+    {% endif %}
+  </div>
+</div>
+
+  
+</div>
+
+</main>
+<script>
+  // Edit button handler
+  document.querySelectorAll(".editBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.getElementById("edit_row_id").value = btn.dataset.id;
+      document.getElementById("edit_weight_from").value = btn.dataset.from;
+      document.getElementById("edit_weight_to").value = btn.dataset.to;
+      document.getElementById("edit_cost").value = btn.dataset.cost;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+</script>
+
+{% endblock %}

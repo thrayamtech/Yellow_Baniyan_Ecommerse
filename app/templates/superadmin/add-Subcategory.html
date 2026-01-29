@@ -1,0 +1,95 @@
+{% extends 'superadmin/adminbase.html' %}
+{% load static %}
+{% block title %} Add Sub-Category {% endblock %}
+{% block content %}
+<main class="main-content-wrapper">
+   <div class="container">
+      <div class="row mb-8">
+         <div class="col-md-12">
+            <div class="d-md-flex justify-content-between align-items-center">
+               <div>
+                  <h2>Add Sub Category</h2>
+                  <nav aria-label="breadcrumb">
+                     <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{% url 'admin-home' %}" class="text-inherit">Dashboard</a>
+                        </li>
+                        <li class="breadcrumb-item"><a href="{% url 'categories' %}" class="text-inherit">Categories</a>
+                        </li>
+                        <li class="breadcrumb-item active" aria-current="page">Add Sub Category</li>
+                     </ol>
+                  </nav>
+               </div>
+               <div>
+                  <a href="{% url 'categories' %}" class="btn btn-light">Back to Categories</a>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      <div class="row">
+         <div class="col-lg-12 col-12">
+            <div class="card mb-6 shadow border-0">
+               <div class="card-body p-6">
+                  <h4 class="mb-4 h5 mt-5">Sub Category Information</h4>
+
+                  <!-- ✅ Real Form -->
+                  <form action="" method="POST" enctype="multipart/form-data">
+                     {% csrf_token %}
+                     <div class="row">
+                        <div class="mb-3 col-lg-6">
+                           <label class="form-label">Sub Category Name</label>
+                           <input type="text" class="form-control" name="subcategory_name"
+                              placeholder="Sub Category Name" required />
+                        </div>
+
+                        <div class="mb-3 col-lg-6">
+                           <label class="form-label">Slug</label>
+                           <input type="text" class="form-control" name="slug" placeholder="Slug" required />
+                        </div>
+
+                        <div class="mb-3 col-lg-6">
+                           <label class="form-label">Parent Category</label>
+                           <select class="form-select" name="category_id" required>
+                              <option value="">-- Select Parent Category --</option>
+                              {% for cat in categories %}
+                              <option value="{{ cat.id }}" {% if parent_category and cat.id == parent_category.id %}selected{% endif %}>
+
+                                 {{ cat.name }}
+                              </option>
+                              {% endfor %}
+                           </select>
+                        </div>
+
+                        <div class="mb-3 col-lg-12">
+                           <label class="form-label">Description</label>
+                           <textarea class="form-control" name="description" rows="4" placeholder="Enter description..."
+                              required></textarea>
+                        </div>
+
+                        <div class="mb-3 col-lg-12 mt-5">
+                           <h4 class="mb-4 h5">Meta Data</h4>
+                           <div class="mb-3">
+                              <label class="form-label">Meta Title</label>
+                              <input type="text" class="form-control" name="meta_title" placeholder="Meta Title" />
+                           </div>
+
+                           <div class="mb-3">
+                              <label class="form-label">Meta Description</label>
+                              <textarea class="form-control" name="meta_description" rows="3"
+                                 placeholder="Meta Description"></textarea>
+                           </div>
+                        </div>
+
+                        <div class="col-lg-12">
+                           <input type="submit" class="btn btn-primary" value="Create Sub-Category">
+                           <input type="reset" class="btn btn-secondary ms-2">
+                        </div>
+                     </div>
+                  </form>
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+</main>
+{% endblock %}

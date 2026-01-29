@@ -1,0 +1,128 @@
+{% extends "superadmin/adminbase.html" %}
+{% load static %}
+{% block title %}Products - Superadmin{% endblock %}
+{% block content %}
+<!-- main -->
+<main class="main-content-wrapper">
+	<div class="container">
+		<div class="row mb-8">
+			<div class="col-md-12">
+				<!-- page header -->
+				<div class="d-md-flex justify-content-between align-items-center">
+					<div>
+						<h2>Products</h2>
+						<!-- breacrumb -->
+						<nav aria-label="breadcrumb">
+							<ol class="breadcrumb mb-0">
+								<li class="breadcrumb-item"><a href="{% url 'admin-home' %}"
+										class="text-inherit">Dashboard</a></li>
+								<li class="breadcrumb-item active" aria-current="page">Product Categories</li>
+							</ol>
+						</nav>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="mb-4 d-flex justify-content-end gap-3">
+			<a href="{% url 'download_product_template_global' %}" class="btn btn-success btn-sm">
+				📥 Download Excel Format
+			</a>
+			<form method="POST" action="{% url 'upload_product_excel_global' %}" enctype="multipart/form-data"
+				class="d-inline">
+				{% csrf_token %}
+				<input type="file" name="excel_file" accept=".xlsx,.xls" required
+					class="form-control form-control-sm d-inline w-auto" />
+				<button type="submit" class="btn btn-primary btn-sm">📤 Upload Excel</button>
+			</form>
+		</div>
+		<section class="my-lg-14 my-8">
+			<!-- category -->
+			<div class="container">
+				<!-- row -->
+				<div class="row">
+					<div class="col-12">
+						<div class="mb-8">
+							<!-- heading -->
+							<h3 class="mb-0">Add Products by Category</h3>
+						</div>
+					</div>
+				</div>
+				<!-- row -->
+				<div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xxl-6 g-6">
+					<!-- col -->
+					{% for category in categories %}
+					<div class="col">
+
+						<a href="{% url 'add-productcategory' category.id %}" class="text-decoration-none text-inherit">
+							<!-- card -->
+							<div class="card card-product">
+								<div class="card-body text-center py-8">
+									<!-- img -->
+									<img src="/media/{{ category.image }}" alt="{{ category.name }}" class="mb-3"
+										style="width: 100%;" />
+
+									<!-- text -->
+									<div class="text-truncate">{{ category.name }}</div>
+								</div>
+							</div>
+						</a>
+					</div>
+					{% endfor %}
+				</div>
+			</div>
+		</section>
+	</div>
+</main>
+
+<!-- Limit Reached Modal -->
+<div class="modal fade" id="upgradePlanModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-body text-center p-5">
+
+        <!-- Icon -->
+        <div class="mb-3">
+          <i class="bi bi-exclamation-triangle-fill text-warning fs-1"></i>
+        </div>
+
+        <!-- Title -->
+        <h4 class="fw-bold text-primary mb-3">Product Limit Reached</h4>
+
+        <!-- Message -->
+        <p class="text-muted mb-4">
+          You’ve reached the maximum number of products allowed in your current plan.<br>
+          Please upgrade your plan to continue adding new products. <br>
+		  In this free version, you can upload up to <font class="fw-bold text-danger">25 products</font>  only.
+        </p>
+
+        <!-- Button -->
+        <a href="{% url 'payment' %}" class="btn btn-info w-100 py-2 fw-semibold rounded-pill">
+          <i class="bi bi-credit-card me-2"></i> Go to Payment Page
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    {% if messages %}
+    {% for message in messages %}
+      {% if "limit" in message.message|striptags or "plan" in message.message|striptags %}
+        const modalEl = document.getElementById('upgradePlanModal');
+        if (modalEl) {
+          const modal = new bootstrap.Modal(modalEl);
+          modal.show();
+        }
+      {% endif %}
+    {% endfor %}
+    {% endif %}
+});
+
+</script>
+
+
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends 'superadmin/adminbase.html' %}
+{% block content %}
+<main class="main-content-wrapper">
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>Notifications</h4>
+    <div>
+      <a href="{% url 'mark-all-read' %}" class="btn btn-outline-primary btn-sm me-2">Mark All as Read</a>
+      <a href="{% url 'delete_all_notifications' %}" class="btn btn-outline-danger btn-sm"
+         onclick="return confirm('Are you sure you want to delete all notifications?')">
+        Delete All
+      </a>
+    </div>
+  </div>
+
+  <form method="POST" action="{% url 'delete_selected_notifications' %}">
+    {% csrf_token %}
+    <div class="table-responsive">
+      <table class="table table-striped align-middle">
+        <thead class="table-light">
+          <tr>
+            <th width="5%"><input type="checkbox" id="select-all"></th>
+            <th>Message</th>
+            <th width="25%">Date</th>
+            <th width="10%">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for note in notifications %}
+          <tr {% if note.is_read == 0 %}class="fw-bold"{% endif %}>
+            <td><input type="checkbox" name="selected[]" value="{{ note.id }}"></td>
+            <td>{{ note.message }}</td>
+            <td>{{ note.created_at|date:"d M Y, h:i A" }}</td>
+            <td>
+              <a href="{% url 'delete_notification' note.id %}" class="btn btn-sm btn-outline-danger"
+                 onclick="return confirm('Delete this notification?')">
+                Delete
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="text-center text-muted py-3">
+              No notifications found.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <button type="submit" class="btn btn-danger btn-sm mt-2"
+            onclick="return confirm('Delete selected notifications?')">
+      Delete Selected
+    </button>
+  </form>
+</div>
+</main>
+
+<script>
+  // Select all checkbox logic
+  document.addEventListener("DOMContentLoaded", function () {
+    const selectAll = document.getElementById("select-all");
+    if (selectAll) {
+      selectAll.addEventListener("click", function () {
+        const checkboxes = document.querySelectorAll('input[name="selected[]"]');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+      });
+    }
+  });
+</script>
+{% endblock %}

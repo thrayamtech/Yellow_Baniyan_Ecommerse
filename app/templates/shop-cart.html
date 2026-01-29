@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Shop Cart{% endblock %}
+{% block content %}
+
+<main>
+   <section class="mb-lg-14 mb-8 mt-8">
+      <div class="container">
+         <div class="row">
+            <div class="col-12">
+               <div class="card py-1 border-0 mb-8">
+                  <div>
+                     <h1 class="fw-bold">Shop Cart</h1>
+                  </div>
+               </div>
+            </div>
+         </div>
+
+         <div class="row">
+            <!-- 🧺 Cart Items -->
+            <div class="col-lg-8 col-md-7">
+               <div class="py-3">
+                  <ul class="list-group list-group-flush" id="cartList">
+                     {% for item in items %}
+                     <li class="list-group-item py-3 ps-0 border-top" id="cartItem{{ item.cart_id }}">
+                        <div class="row align-items-center">
+                           <div class="col-6 col-md-6 col-lg-7">
+                              <a href="{% url 'view-product' item.product_id %}" class="text-inherit">
+                              <div class="d-flex">
+                                 <img src="/media/{{ item.image }}" alt="{{ item.title }}"
+                                    class="icon-shape icon-xxl" />
+                                 <div class="ms-3">
+                                    <a href="{% url 'view-product' item.product_id %}" class="text-inherit">
+                                       <h6 class="mb-0">{{ item.title }}</h6>
+                                    </a>
+                                    <span><small class="text-muted">₹{{ item.sale_price|default:item.price }}</small></span>
+                                    <div class="mt-2 small lh-1">
+                                       <a href="javascript:void(0);" onclick="removeItem({{ item.cart_id }})"
+                                          class="text-decoration-none text-inherit">
+                                          <span class="me-1 align-text-bottom">
+                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round"
+                                                class="feather feather-trash-2 text-success">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path
+                                                   d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                                </path>
+                                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                                             </svg>
+                                          </span>
+                                          <span class="text-muted">Remove</span>
+                                    </div>
+                                 </div>
+                              </div>
+                           </a>
+                           </div>
+
+                           <!-- Quantity -->
+                           <div class="col-4 col-md-4 col-lg-3">
+                              <div class="input-group input-spinner">
+                                 <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    onclick="updateQty({{ item.cart_id }}, -1)">-</button>
+                                 <input type="number" value="{{ item.quantity }}" id="qty{{ item.cart_id }}" readonly
+                                    class="form-control text-center form-control-sm" />
+                                 <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    onclick="updateQty({{ item.cart_id }}, 1)">+</button>
+                              </div>
+                           </div>
+
+                           <!-- Price -->
+                           <div class="col-2 text-lg-end text-start text-md-end col-md-2">
+                              <span class="fw-bold" id="price{{ item.cart_id }}">
+                                 ₹{{ item.total_price|floatformat:2 }}
+                              </span>
+                           </div>
+                        </div>
+                     </li>
+                     {% empty %}
+                     <li class="list-group-item text-center py-5">
+                        <p class="text-muted mb-0">Your cart is empty 🛒</p>
+                        <a href="{% url 'index' %}" class="btn btn-primary mt-3">Continue Shopping</a>
+                     </li>
+                     {% endfor %}
+                  </ul>
+
+                  {% if items %}
+                  <div class="d-flex justify-content-between mt-4">
+                     <a href="{% url 'index' %}" class="btn btn-primary">Continue Shopping</a>
+                  </div>
+                  {% endif %}
+               </div>
+            </div>
+
+            <!-- 💳 Summary -->
+            <div class="col-12 col-lg-4 col-md-5">
+               <div class="mb-5 card mt-6">
+                  <div class="card-body p-6">
+                     <h2 class="h5 mb-4">Summary</h2>
+                     <ul class="list-group list-group-flush mb-3">
+                        <li class="list-group-item d-flex justify-content-between">
+                           <span>Subtotal</span><strong id="subtotal">₹{{ subtotal|floatformat:2 }}</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between fw-bold">
+                           <span>Total</span><strong id="total">₹{{ subtotal|floatformat:2 }}</strong>
+                        </li>
+                     </ul>
+
+                     {% if items %}
+                     <button type="button" class="btn btn-primary w-100"
+                        onclick="checkoutCart({{ subtotal|floatformat:0 }})">
+                        Go to Checkout — ₹{{ subtotal|floatformat:2 }}
+                     </button>
+                     {% endif %}
+
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+   </section>
+</main>
+
+<!-- ✅ Page-Specific JS -->
+<script>
+   async function updateQty(cartId, change) {
+      const qtyInput = document.getElementById(`qty${cartId}`);
+      let current = parseInt(qtyInput.value);
+      const newQty = current + change;
+      if (newQty <= 0) return removeItem(cartId);
+
+      const csrfToken = '{{ csrf_token }}';
+      const res = await fetch(`/update-cart/${cartId}/`, {
+         method: 'POST',
+         headers: { 'X-CSRFToken': csrfToken },
+         body: new URLSearchParams({ quantity: newQty })
+      });
+      const data = await res.json();
+      if (data.status === "updated") location.reload();
+   }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+   function checkoutCart(amount) {
+      Swal.fire({
+         title: "Proceed to Checkout?",
+         text: `Your total is ₹${amount}. Continue to payment and address selection?`,
+         icon: "question",
+         showCancelButton: true,
+         confirmButtonText: "Yes, Checkout Now",
+         cancelButtonText: "Cancel",
+         confirmButtonColor: "#0d6efd",
+         cancelButtonColor: "#6c757d"
+      }).then(result => {
+         if (result.isConfirmed) {
+            Swal.fire({
+               title: "Redirecting...",
+               text: "Preparing your checkout page...",
+               icon: "info",
+               showConfirmButton: false,
+               allowOutsideClick: false,
+               timer: 1200,
+               timerProgressBar: true,
+               didOpen: () => {
+                  Swal.showLoading();
+               }
+            });
+
+            setTimeout(() => {
+               window.location.href = "{% url 'cart-checkout' %}";
+            }, 1200);
+         }
+      });
+   }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+   async function removeItem(cartId) {
+      Swal.fire({
+         title: "Remove this item?",
+         text: "Do you really want to remove this product from your cart?",
+         icon: "warning",
+         showCancelButton: true,
+         confirmButtonText: "Yes, Remove it",
+         cancelButtonText: "Cancel",
+         confirmButtonColor: "#d33",
+         cancelButtonColor: "#6c757d"
+      }).then(async (result) => {
+         if (result.isConfirmed) {
+            const csrfToken = '{{ csrf_token }}';
+            const res = await fetch(`/update-cart/${cartId}/`, {
+               method: 'POST',
+               headers: { 'X-CSRFToken': csrfToken },
+               body: new URLSearchParams({ quantity: 0 })
+            });
+
+            const data = await res.json();
+
+            if (data.status === "removed") {
+               Swal.fire({
+                  icon: "success",
+                  title: "Item Removed",
+                  text: "Product has been removed from your cart.",
+                  toast: true,
+                  position: "top-end",
+                  showConfirmButton: false,
+                  timer: 2500,
+                  timerProgressBar: true,
+                  background: "#f8f9fa",
+                  iconColor: "#198754"
+               });
+
+               // 🧹 Remove from DOM instantly
+               document.getElementById(`cartItem${cartId}`).remove();
+
+               // 🧮 Update cart count badge
+               updateCartCount(-1);
+
+               // If cart empty → refresh for empty message
+               if (document.querySelectorAll('[id^="cartItem"]').length === 0) {
+                  setTimeout(() => location.reload(), 1200);
+               }
+            } else {
+               Swal.fire({
+                  icon: "error",
+                  title: "Error",
+                  text: "Could not remove item. Please try again.",
+                  confirmButtonColor: "#d33"
+               });
+            }
+         }
+      });
+   }
+</script>
+
+
+{% endblock %}

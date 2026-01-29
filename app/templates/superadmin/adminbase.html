@@ -1,0 +1,739 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+
+
+<head>
+	<!-- Required meta tags -->
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<meta content="Codescandy" name="author">
+	<title> {% block title %} Admin Dashboard {% endblock title %} </title>
+	<link href="{% static 'assets/libs/dropzone/dist/min/dropzone.min.css' %}" rel="stylesheet" />
+	<!-- Favicon icon-->
+	<link rel="shortcut icon" type="image/x-icon" href="{% static 'assets/images/favicon/favicon.ico' %}">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+	<!-- Libs CSS -->
+	<link href="{% static 'assets/libs/bootstrap-icons/font/bootstrap-icons.min.css' %}" rel="stylesheet">
+	<link href="{% static 'assets/libs/feather-webfont/dist/feather-icons.css' %}" rel="stylesheet">
+	<link href="{% static 'assets/libs/simplebar/dist/simplebar.min.css' %}" rel="stylesheet">
+
+
+	<!-- Theme CSS -->
+	<link rel="stylesheet" href="{% static 'assets/css/theme.min.css' %}">
+
+	<style>
+		/* 🔴 Animated red dot indicator */
+		.pulse-dot {
+			width: 10px;
+			height: 10px;
+			background-color: #dc3545;
+			/* Bootstrap red */
+			border-radius: 50%;
+			box-shadow: 0 0 0 rgba(220, 53, 69, 0.7);
+			animation: pulse 1.5s infinite;
+		}
+
+		@keyframes pulse {
+			0% {
+				box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+			}
+
+			70% {
+				box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+			}
+
+			100% {
+				box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+			}
+		}
+
+		.badge {
+  font-size: 0.65rem;
+  padding: 0.25em 0.45em;
+  border-radius: 0.35rem;
+}
+
+.icon-md {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+	</style>
+
+
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-M8S4MT3EYG"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag() {
+			dataLayer.push(arguments);
+		}
+		gtag("js", new Date());
+
+		gtag("config", "G-M8S4MT3EYG");
+	</script>
+	<script type="text/javascript">
+		(function (c, l, a, r, i, t, y) {
+			c[a] =
+				c[a] ||
+				function () {
+					(c[a].q = c[a].q || []).push(arguments);
+				};
+			t = l.createElement(r);
+			t.async = 1;
+			t.src = "https://www.clarity.ms/tag/" + i;
+			y = l.getElementsByTagName(r)[0];
+			y.parentNode.insertBefore(t, y);
+		})(window, document, "clarity", "script", "kuc8w5o9nt");
+	</script>
+
+</head>
+
+<body>
+	<!-- main -->
+	<div>
+		<!-- navbar -->
+		<nav class="navbar navbar-expand-lg navbar-glass">
+			<div class="container-fluid">
+				<div class="d-flex justify-content-between align-items-center w-100">
+					<div class="d-flex align-items-center">
+						<a class="text-inherit d-block d-xl-none me-4" data-bs-toggle="offcanvas"
+							href="#offcanvasExample" role="button" aria-controls="offcanvasExample">
+							<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor"
+								class="bi bi-text-indent-right" viewBox="0 0 16 16">
+								<path
+									d="M2 3.5a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5zm10.646 2.146a.5.5 0 0 1 .708.708L11.707 8l1.647 1.646a.5.5 0 0 1-.708.708l-2-2a.5.5 0 0 1 0-.708l2-2zM2 6.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5zm0 3a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5zm0 3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z" />
+							</svg>
+						</a>
+
+						<form role="search">
+							<label for="search" class="form-label visually-hidden">Search</label>
+							<input class="form-control" type="search" placeholder="Search" aria-label="Search"
+								id="search" />
+						</form>
+					</div>
+					<div>
+						<ul class="list-unstyled d-flex align-items-center mb-0 ms-5 ms-lg-0">
+							<li class="dropdown-center">
+								<a class="position-relative btn-icon btn-ghost-secondary btn rounded-circle" href="#"
+									role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									<i class="bi bi-bell fs-5"></i>
+									{% if unread_notifications and unread_notifications > 0 %}
+									<span
+										class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger mt-2 ms-n2">
+										{{ unread_notifications }}
+										<span class="visually-hidden">unread messages</span>
+									</span>
+									{% endif %}
+								</a>
+
+								<div class="dropdown-menu dropdown-menu-end dropdown-menu-lg p-0 border-0">
+									<div class="border-bottom p-4 d-flex justify-content-between align-items-center">
+										<div>
+											<h5 class="mb-1">Notifications</h5>
+											{% if unread_notifications > 0 %}
+											<p class="mb-0 small text-danger fw-semibold">{{ unread_notifications }}
+												unread</p>
+											{% else %}
+											<p class="mb-0 small text-muted">All caught up!</p>
+											{% endif %}
+										</div>
+										<a href="{% url 'mark-all-read' %}" class="btn btn-sm btn-outline-success"
+											data-bs-toggle="tooltip" title="Mark all as read">
+											<i class="bi bi-check2-all"></i>
+										</a>
+									</div>
+
+									<div data-simplebar style="max-height: 250px;">
+										<ul class="list-group list-group-flush notification-list-scroll fs-6">
+											{% if notifications %}
+											{% for note in notifications %}
+											<li
+												class="list-group-item px-4 py-3 list-group-item-action {% if note.is_read == 0 %}active{% endif %}">
+												<div class="d-flex flex-column">
+													<p class="mb-1">{{ note.message }}</p>
+													<small class="text-muted">{{ note.created_at|date:"d M Y, h:i A"
+														}}</small>
+												</div>
+											</li>
+											{% endfor %}
+											{% else %}
+											<li class="list-group-item text-center py-4 text-muted">
+												No notifications found.
+											</li>
+											{% endif %}
+										</ul>
+									</div>
+
+									<div class="border-top text-center py-3">
+										<a href="{% url 'admin-notifications' %}" class="small text-decoration-none">
+											View All Notifications
+										</a>
+									</div>
+								</div>
+							</li>
+
+
+							<li class="dropdown ms-4">
+								<a href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									<img src="/media/{{ admin.photo }}" alt=""
+										class="avatar avatar-md rounded-circle" />
+								</a>
+
+								<div class="dropdown-menu dropdown-menu-end p-0">
+									<div class="lh-1 px-5 py-4 border-bottom">
+										<h5 class="mb-1 h6">{{ admin.username }}</h5>
+										<small>{{ admin.email }}</small>
+										<br><br>
+										{% if admin.is_superadmin %}
+										Super Admin
+										{% else %}
+										Admin
+										{% endif %}
+									</div>
+
+									<ul class="list-unstyled px-2 py-3">
+
+										<li>
+											<a class="dropdown-item" href="{% url 'admin-profile' %}">Profile</a>
+										</li>
+
+
+									</ul>
+									<div class="border-top px-5 py-3">
+										<a href="{% url 'adminlogout' %}">Log Out</a>
+									</div>
+								</div>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</nav>
+
+
+		<div class="main-wrapper">
+			<!-- navbar vertical -->
+			<!-- navbar -->
+			<nav class="navbar-vertical-nav d-none d-xl-block">
+				<div class="navbar-vertical">
+					<div class="px-4 py-5">
+						<a href="{% url 'index' %}" class="navbar-brand">
+							<img src="{% static 'assets/images/logo/freshCart-logo.svg' %}" alt="" />
+						</a>
+					</div>
+					<div class="navbar-vertical-content flex-grow-1" data-simplebar="">
+						<ul class="navbar-nav flex-column" id="sideNavbar">
+							<li class="nav-item">
+								<a class="nav-link {% if request.path == '/admin-home/' %}active{% endif %}" href="{% url 'admin-home' %}">
+									<div class="d-flex align-items-center">
+										<span class="nav-link-icon"><i class="bi bi-house"></i></span>
+										<span class="nav-link-text">Dashboard</span>
+									</div>
+								</a>
+							</li>
+							<li class="nav-item mt-6 mb-3">
+								<span class="nav-label">Store Managements</span>
+							</li>
+
+							{% if admin.is_superadmin %}
+							<li class="nav-item">
+  <a class="nav-link {% if '/categories/' in request.path or '/add-subcategory/' in request.path %} {% else %}collapsed{% endif %}" 
+     href="#" 
+     data-bs-toggle="collapse"
+     data-bs-target="#navCategoriesCategories" 
+     aria-expanded="{% if '/categories/' in request.path or '/add-subcategory/' in request.path %}true{% else %}false{% endif %}"
+     aria-controls="navCategoriesCategories">
+    <div class="d-flex align-items-center">
+      <span class="nav-link-icon"><i class="bi bi-list-task"></i></span>
+      <span class="nav-link-text">Categories</span>
+    </div>
+  </a>
+
+  <div id="navCategoriesCategories" 
+       class="collapse {% if '/categories/' in request.path or '/add-subcategory/' in request.path %}show{% endif %}" 
+       data-bs-parent="#sideNavbar">
+    <ul class="nav flex-column">
+      <li class="nav-item">
+        <a class="nav-link {% if request.path == '/categories/' %}active{% endif %}" 
+           href="{% url 'categories' %}">Add Categories</a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link {% if request.path == '/add-subcategory/' %}active{% endif %}" 
+           href="{% url 'add-subcategory' %}">Add Sub Categories</a>
+      </li>
+    </ul>
+  </div>
+</li>
+
+							{% endif %}
+
+							<li class="nav-item">
+  <a class="nav-link {% if '/brands/' in request.path or '/add-brand/' in request.path or '/superadmin/brand-analytics/' in request.path %}{% else %}collapsed{% endif %}" 
+     href="#" 
+     data-bs-toggle="collapse" 
+     data-bs-target="#navBrands"
+     aria-expanded="{% if '/brands/' in request.path or '/add-brand/' in request.path or '/superadmin/brand-analytics/' in request.path %}true{% else %}false{% endif %}"
+     aria-controls="navBrands">
+    <div class="d-flex align-items-center">
+      <span class="nav-link-icon"><i class="bi bi-tags"></i></span>
+      <span class="nav-link-text">Brands</span>
+    </div>
+  </a>
+
+  <div id="navBrands" 
+       class="collapse {% if '/brands/' in request.path or '/add-brand/' in request.path or '/superadmin/brand-analytics/' in request.path %}show{% endif %}" 
+       data-bs-parent="#sideNavbar">
+    <ul class="nav flex-column">
+
+      <li class="nav-item">
+        <a class="nav-link {% if request.path == '/brands/' %}active{% endif %}" 
+           href="{% url 'brands' %}">
+          All Brands
+        </a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link {% if request.path == '/add-brand/' %}active{% endif %}" 
+           href="{% url 'add-brand' %}">
+          Add Brand
+        </a>
+      </li>
+
+      {% if admin.is_superadmin %}
+      <li class="nav-item">
+        <a class="nav-link {% if request.path == '/superadmin/brand-analytics/' %}active{% endif %}" 
+           href="{% url 'brand-analytics' %}">
+          Analytics
+        </a>
+      </li>
+      {% endif %}
+
+    </ul>
+  </div>
+</li>
+
+
+
+							<li class="nav-item">
+  <a class="nav-link {% if '/products/' in request.path or '/approve-product/' in request.path or '/approval-list/' in request.path or '/manage-plans/' in request.path %}{% else %}collapsed{% endif %}" 
+     href="#" 
+     data-bs-toggle="collapse" 
+     data-bs-target="#navCategoriesProducts"
+     aria-expanded="{% if '/products/' in request.path or '/approve-product/' in request.path or '/approval-list/' in request.path or '/manage-plans/' in request.path %}true{% else %}false{% endif %}"
+     aria-controls="navCategoriesProducts">
+    <div class="d-flex align-items-center position-relative">
+      <span class="nav-link-icon"><i class="bi bi-cart"></i></span>
+      <span class="nav-link-text">Products</span>
+
+      {% if pending_approvals and pending_approvals > 0 %}
+      <span class="pulse-dot position-absolute" style="right: -100px; bottom: 8px;"></span>
+      {% endif %}
+    </div>
+  </a>
+
+  <div id="navCategoriesProducts" 
+       class="collapse {% if '/products/' in request.path or '/approve-product/' in request.path or '/approval-list/' in request.path or '/manage-plans/' in request.path %}show{% endif %}" 
+       data-bs-parent="#sideNavbar">
+
+    <ul class="nav flex-column">
+      <!-- Add Products -->
+      <li class="nav-item">
+        <a class="nav-link {% if request.path == '/products/' %}active{% endif %}" 
+           href="{% url 'products' %}">
+          Add Products
+        </a>
+      </li>
+
+      {% if admin.is_superadmin %}
+      <!-- Approve Products -->
+      <li class="nav-item">
+        <a class="nav-link position-relative {% if request.path == '/approve-product/' %}active{% endif %}" 
+           href="{% url 'approve-product' %}">
+          Approve Products
+          {% if pending_approvals and pending_approvals > 0 %}
+          <span class="position-absolute bottom-0 start-100 translate-middle badge rounded-pill bg-danger">
+            {{ pending_approvals }}
+            <span class="visually-hidden">pending approvals</span>
+          </span>
+          {% endif %}
+        </a>
+      </li>
+
+      <!-- Approve Product List -->
+      <li class="nav-item">
+        <a class="nav-link {% if request.path == '/approval-list/' %}active{% endif %}" 
+           href="{% url 'approval-list' %}">
+          Approve Product List
+        </a>
+      </li>
+
+      <!-- Manage Plans -->
+      <li class="nav-item">
+        <a class="nav-link {% if request.path == '/manage-plans/' %}active{% endif %}" 
+           href="{% url 'manage-plans' %}">
+          Manage Plans
+        </a>
+      </li>
+      {% endif %}
+    </ul>
+  </div>
+</li>
+
+							<li class="nav-item">
+								<a class="nav-link {% if request.path == '/order-list/' %}active{% endif %}" href="{% url 'order-list' %} ">
+									<div class="d-flex align-items-center">
+										<span class="nav-link-icon"><i class="bi bi-bag"></i></span>
+										<span class="nav-link-text">Orders</span>
+									</div>
+								</a>
+							</li>
+							{% if admin.is_superadmin %}
+							<li class="nav-item">
+								<a class="nav-link {% if request.path == '/carousel-images/' %}active{% endif %}" href="{% url 'carousel-images' %} ">
+									<div class="d-flex align-items-center">
+										<span class="nav-link-icon"><i class="bi bi-bag"></i></span>
+										<span class="nav-link-text">Add Carousel Image</span>
+									</div>
+								</a>
+							</li>
+
+
+							<li class="nav-item">
+								<a class="nav-link {% if request.path == '/sellers/' %}active{% endif %} " href="{% url 'sellers' %}">
+									<div class="d-flex align-items-center">
+										<span class="nav-link-icon"><i class="bi bi-shop"></i></span>
+										<span class="nav-link-text">Sellers / Vendors</span>
+									</div>
+								</a>
+							</li>
+
+							<li class="nav-item">
+								<a class="nav-link {% if request.path == '/admin-home/customers/' %}active{% endif %}" href="{% url 'customers' %}">
+									<div class="d-flex align-items-center">
+										<span class="nav-link-icon"><i class="bi bi-people"></i></span>
+										<span class="nav-link-text">Customers</span>
+									</div>
+								</a>
+							</li>
+
+							<li class="nav-item">
+								<a class="nav-link {% if request.path == '/superadmin/manage-shipping-rewards/' %}active{% endif %} " href="{% url 'manage-shipping-rewards' %}">
+									<div class="d-flex align-items-center">
+										<span class="nav-link-icon"><i class="bi bi-star"></i></span>
+										<span class="nav-link-text">Shipping & Rewards</span>
+									</div>
+								</a>
+							</li>
+
+							<li class="nav-item">
+        <a class="nav-link {% if request.path == '/superadmin/alert-settings/' %}active{% endif %}" 
+           href="{% url 'manage-alert-settings' %}">
+          <div class="d-flex align-items-center">
+										<span class="nav-link-icon"><i class="bi bi-bell"></i></span>
+										<span class="nav-link-text">Email Settings</span>
+									</div>
+        </a>
+      </li>
+							{% endif %}
+							<!-- Nav item -->
+						</ul>
+					</div>
+				</div>
+			</nav>
+
+			<nav class="navbar-vertical-nav offcanvas offcanvas-start navbar-offcanvac" tabindex="-1"
+				id="offcanvasExample">
+				<div class="navbar-vertical">
+					<div class="px-4 py-5 d-flex justify-content-between align-items-center">
+						<a href="{% url 'index' %}" class="navbar-brand">
+							<img src="{% static 'assets/images/logo/freshCart-logo.svg' %}" alt="" />
+						</a>
+						<button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+					</div>
+					<div class="navbar-vertical-content flex-grow-1" data-simplebar="">
+						<ul class="navbar-nav flex-column">
+							<li class="nav-item">
+								<a class="nav-link" href="{% url 'admin-home' %}">
+									<div class="d-flex align-items-center">
+										<span class="nav-link-icon"><i class="bi bi-house"></i></span>
+										<span>Dashboard</span>
+									</div>
+								</a>
+							</li>
+							<li class="nav-item mt-6 mb-3">
+								<span class="nav-label">Store Managements</span>
+							</li>
+							{% if admin.is_superadmin %}
+							<li class="nav-item">
+								<a class="nav-link collapsed " href="#" data-bs-toggle="collapse"
+									data-bs-target="#navCategories" aria-expanded="false" aria-controls="navCategories">
+									<div class="d-flex align-items-center">
+										<span class="nav-link-icon"><i class="bi bi-list-task"></i></span>
+										<span class="nav-link-text">Categories</span>
+									</div>
+								</a>
+								<div id="navCategories" class="collapse " data-bs-parent="#sideNavbar">
+									<ul class="nav flex-column">
+										<li class="nav-item">
+											<a class="nav-link " href="{% url 'categories' %}">Add Categories</a>
+										</li>
+										<!-- Nav item -->
+										<li class="nav-item">
+											<a class="nav-link " href="{% url 'add-subcategory' %}">Add Sub
+												Categories</a>
+										</li>
+									</ul>
+								</div>
+							</li>
+							{% endif %}
+
+							<li class="nav-item">
+  <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#navBrands">
+    <div class="d-flex align-items-center">
+      <span class="nav-link-icon"><i class="bi bi-tags"></i></span>
+      <span class="nav-link-text">Brands</span>
+    </div>
+  </a>
+  <div id="navBrands" class="collapse" data-bs-parent="#sideNavbar">
+    <ul class="nav flex-column">
+      <li class="nav-item"><a class="nav-link" href="{% url 'brands' %}">All Brands</a></li>
+      <li class="nav-item"><a class="nav-link" href="{% url 'add-brand' %}">Add Brand</a></li>
+      {% if admin.is_superadmin %}
+      <li class="nav-item"><a class="nav-link" href="{% url 'brand-analytics' %}">Analytics</a></li>
+      {% endif %}
+    </ul>
+  </div>
+</li>
+
+
+							<li class="nav-item ">
+								<a class="nav-link collapsed " href="#" data-bs-toggle="collapse"
+									data-bs-target="#navProducts" aria-expanded="false" aria-controls="navProducts">
+									<div class="d-flex align-items-center">
+										<span class="nav-link-icon"><i class="bi bi-cart"></i></span>
+										<span class="nav-link-text">Products</span>
+												{% if pending_approvals and pending_approvals > 0 %}
+      <span class="pulse-dot position-absolute" style="right: 50px; bottom: 20px;"></span>
+      {% endif %}
+									</div>
+								</a>
+								<div id="navProducts" class="collapse " data-bs-parent="#sideNavbar">
+									<ul class="nav flex-column">
+										<li class="nav-item">
+											<a class="nav-link " href="{% url 'products' %}">Add Products</a>
+
+									
+										</li>
+										<!-- Nav item -->
+										{% if admin.is_superadmin %}
+										<li class="nav-item">
+											<a class="nav-link position-relative" href="{% url 'approve-product' %}">
+												Approve Products
+												{% if pending_approvals and pending_approvals > 0 %}
+												<span
+													class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+													{{ pending_approvals }}
+													<span class="visually-hidden">pending approvals</span>
+												</span>
+												{% endif %}
+											</a>
+										</li>
+										<li class="nav-item">
+											<a class="nav-link " href="{% url 'approval-list' %}">Approval List</a>
+										</li>
+										<li class="nav-item">
+  <a class="nav-link" href="{% url 'manage-plans' %}">
+     Manage Plans
+  </a>
+</li>
+										{% endif %}
+									</ul>
+								</div>
+							</li>
+
+							<li class="nav-item">
+								<a class="nav-link" href="{% url 'order-list' %} ">
+									<div class="d-flex align-items-center">
+										<span class="nav-link-icon"><i class="bi bi-bag"></i></span>
+										<span class="nav-link-text">Orders</span>
+									</div>
+								</a>
+
+							</li>
+							{% if admin.is_superadmin %}
+							<li class="nav-item">
+								<a class="nav-link" href="{% url 'carousel-images' %} ">
+									<div class="d-flex align-items-center">
+										<span class="nav-link-icon"><i class="bi bi-bag"></i></span>
+										<span class="nav-link-text">Add Carousel Image</span>
+									</div>
+								</a>
+
+							</li>
+
+							<li class="nav-item">
+								<a class="nav-link " href="{% url 'sellers' %}">
+									<div class="d-flex align-items-center">
+										<span class="nav-link-icon"><i class="bi bi-shop"></i></span>
+										<span class="nav-link-text">Sellers / Vendors</span>
+									</div>
+								</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link " href="{% url 'customers' %}">
+									<div class="d-flex align-items-center">
+										<span class="nav-link-icon"><i class="bi bi-people"></i></span>
+										<span class="nav-link-text">Customers</span>
+									</div>
+								</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link {% if request.path == '/superadmin/alert-settings/' %}active{% endif %}" href="{% url 'manage-shipping-rewards' %}">
+									<div class="d-flex align-items-center">
+										<span class="nav-link-icon"><i class="bi bi-star"></i></span>
+										<span class="nav-link-text">Shipping & Rewards</span>
+									</div>
+								</a>
+							</li>
+<li class="nav-item">
+        <a class="nav-link" 
+           href="{% url 'manage-alert-settings' %}">
+          <div class="d-flex align-items-center">
+										<span class="nav-link-icon"><i class="bi bi-bell"></i></span>
+										<span class="nav-link-text">Email Settings</span>
+									</div>
+        </a>
+      </li>
+
+							{% endif %}
+						</ul>
+					</div>
+				</div>
+			</nav>
+
+
+			<!-- Toast Message Section (Centered + Animated + Themed for Yellow Banyan) -->
+			{% if messages %}
+			<style>
+				/* Toast Animation */
+				@keyframes toastSlideIn {
+					from {
+						opacity: 0;
+						transform: translate(-50%, -30px);
+					}
+
+					to {
+						opacity: 1;
+						transform: translate(-50%, 0);
+					}
+				}
+
+				@keyframes toastSlideOut {
+					from {
+						opacity: 1;
+						transform: translate(-50%, 0);
+					}
+
+					to {
+						opacity: 0;
+						transform: translate(-50%, -20px);
+					}
+				}
+
+				.custom-toast {
+					animation: toastSlideIn 0.4s ease-out forwards;
+				}
+
+				.custom-toast.hide {
+					animation: toastSlideOut 0.4s ease-in forwards;
+				}
+			</style>
+
+			<div aria-live="polite" aria-atomic="true" class="position-relative">
+				<div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3"
+					style="z-index: 1055;">
+					{% for message in messages %}
+					<div class="toast custom-toast border-0 mb-2 shadow-lg rounded-3" style="min-width: 350px;
+         background-color:
+         {% if message.tags == 'success' %}#d1f3dc
+         {% elif message.tags == 'error' %}#f8d7da
+         {% elif message.tags == 'warning' %}#fff3cd
+         {% elif message.tags == 'info' %}#d1ecf1
+         {% else %}#f8f9fa{% endif %};
+         color:
+         {% if message.tags == 'success' %}#0f5132
+         {% elif message.tags == 'error' %}#842029
+         {% elif message.tags == 'warning' %}#664d03
+         {% elif message.tags == 'info' %}#055160
+         {% else %}#333{% endif %};" role="alert" aria-live="assertive" aria-atomic="true">
+						<div class="d-flex align-items-center justify-content-between px-3 py-2">
+							<div class="toast-body fw-semibold">
+								{{ message }}
+							</div>
+							<button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"
+								aria-label="Close"></button>
+						</div>
+					</div>
+					{% endfor %}
+				</div>
+			</div>
+			{% endif %}
+
+
+
+
+
+
+			{% block content %}
+
+			<!-- main wrapper -->
+			<main class="main-content-wrapper">
+
+			</main>
+			{% endblock %}
+		</div>
+	</div>
+	<script src="{% static 'assets/libs/flatpickr/dist/flatpickr.min.js' %}"></script>
+	<!-- Libs JS -->
+	<!-- <script src="{% static 'assets/libs/jquery/dist/jquery.min.js"></script> -->
+	<script src="{% static 'assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js' %}"></script>
+	<script src="{% static 'assets/libs/simplebar/dist/simplebar.min.js' %}"></script>
+
+	<!-- Theme JS -->
+	<script src="{% static 'assets/js/theme.min.js' %}"></script>
+
+	<script src="{% static 'assets/libs/apexcharts/dist/apexcharts.min.js' %}"></script>
+	<script src="{% static 'assets/js/vendors/chart.js' %}"></script>
+	<script src="{% static 'assets/libs/quill/dist/quill.min.js' %}"></script>
+	<script src="{% static 'assets/js/vendors/editor.js' %}"></script>
+	<script src="{% static 'assets/libs/dropzone/dist/min/dropzone.min.js' %}"></script>
+	<script src="{% static 'assets/js/vendors/dropzone.js' %}"></script>
+
+	<script>
+		document.addEventListener("DOMContentLoaded", function () {
+			const toastElList = document.querySelectorAll('.toast');
+			toastElList.forEach(toastEl => {
+				const toast = new bootstrap.Toast(toastEl, { delay: 6000 });
+				toast.show();
+
+				// Add slide-out animation before hiding
+				setTimeout(() => {
+					toastEl.classList.add('hide');
+				}, 6000); // starts fade-out slightly before auto-dismiss
+			});
+		});
+	</script>
+
+
+
+</body>
+
+</html>

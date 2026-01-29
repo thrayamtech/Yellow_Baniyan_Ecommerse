@@ -1,0 +1,315 @@
+{% extends 'superadmin/adminbase.html' %}
+{% load static %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+
+<main class="main-content-wrapper">
+  <div class="container-fluid py-4">
+
+    <!-- Page Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+      <h2 class="fw-bold mb-2">Dashboard</h2>
+      <span class="text-muted">Welcome, {{ request.session.admin_username }}</span>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-3">
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="text-muted mb-1">Sales</h6>
+            <h5 class="fw-bold text-success">₹{{ total_sales|floatformat:0 }}</h5>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="text-muted mb-1">Orders</h6>
+            <h5 class="fw-bold text-primary">{{ total_orders }}</h5>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="text-muted mb-1">Products</h6>
+            <h5 class="fw-bold text-warning">{{ total_products }}</h5>
+          </div>
+        </div>
+      </div>
+
+      {% if admin.is_superadmin %}
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="text-muted mb-1">Admins</h6>
+            <h5 class="fw-bold text-danger">{{ total_admins }}</h5>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="text-muted mb-1">Brands</h6>
+            <h5 class="fw-bold text-info">{{ total_brands }}</h5>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="text-muted mb-1">Customers</h6>
+            <h5 class="fw-bold text-secondary">{{ total_customers }}</h5>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="text-muted mb-1">Approved</h6>
+            <h5 class="fw-bold text-success">{{ approved_products }}</h5>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="text-muted mb-1">Pending</h6>
+            <h5 class="fw-bold text-warning">{{ pending_products }}</h5>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center">
+          <div class="card-body">
+            <h6 class="text-muted mb-1">Disapproved</h6>
+            <h5 class="fw-bold text-danger">{{ disapproved_products }}</h5>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Chart + Quick Links -->
+    <div class="row mt-4 g-3">
+      <div class="col-12 col-lg-8">
+        <div class="card h-100">
+          <div class="card-header bg-white fw-semibold">Performance Overview</div>
+          <div class="card-body">
+            <canvas id="chart" height="100"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-4">
+        <div class="card mb-3">
+          <div class="card-header bg-white fw-semibold">Quick Links</div>
+          <div class="list-group list-group-flush">
+            <a href="{% url 'products' %}" class="list-group-item list-group-item-action">Manage Products</a>
+            {% if admin.is_superadmin %}
+            <a href="{% url 'categories' %}" class="list-group-item list-group-item-action">Categories & Brands</a>
+            <a href="{% url 'sellers' %}" class="list-group-item list-group-item-action">Manage Admins</a>
+            <a href="{% url 'manage-plans' %}" class="list-group-item list-group-item-action">Subscription Plans</a>
+            <a href="{% url 'brand-analytics' %}" class="list-group-item list-group-item-action">Brand Analytics</a>
+            {% else %}
+            <a href="{% url 'add-productcategory' 1 %}" class="list-group-item list-group-item-action">Add Product</a>
+            <a href="{% url 'admin-notifications' %}" class="list-group-item list-group-item-action">Notifications</a>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header bg-white fw-semibold">Recent Notifications</div>
+          <ul class="list-group list-group-flush small">
+            {% for note in notifications %}
+            <li class="list-group-item">
+              {{ note.message|truncatechars:70 }}<br>
+              <span class="text-muted small">{{ note.created_at|date:"M d, Y" }}</span>
+            </li>
+            {% empty %}
+            <li class="list-group-item text-muted text-center">No notifications</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Orders + Products -->
+    <div class="row mt-4 g-3">
+      <div class="col-12 col-lg-6">
+        <div class="card h-100">
+          <div class="card-header bg-white fw-semibold">Recent Orders</div>
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>ID</th>
+                  <th>Customer</th>
+                  <th>Status</th>
+                  <th>Total</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for o in recent_orders %}
+                <tr>
+                  <td>#{{ o.id }}</td>
+                  <td>{{ o.first_name }} {{ o.last_name }}</td>
+                  <td>
+                    {% if o.payment_status == 'success' %}
+                    <span class="badge bg-success">Paid</span>
+                    {% else %}
+                    <span class="badge bg-secondary">{{ o.payment_status|title }}</span>
+                    {% endif %}
+                  </td>
+                  <td>₹{{ o.total_amount|floatformat:0 }}</td>
+                  <td>{{ o.created_at|date:"M d, Y" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted">No recent orders</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% if recent_orders.paginator.num_pages > 1 %}
+<nav aria-label="Orders pagination" class="mt-2">
+  <ul class="pagination justify-content-center pagination-sm mb-0">
+    {% if recent_orders.has_previous %}
+    <li class="page-item">
+      <a class="page-link" href="?order_page={{ recent_orders.previous_page_number }}&product_page={{ recent_products.number }}">«</a>
+    </li>
+    {% endif %}
+    {% for i in recent_orders.paginator.page_range %}
+    <li class="page-item {% if i == recent_orders.number %}active{% endif %}">
+      <a class="page-link" href="?order_page={{ i }}&product_page={{ recent_products.number }}">{{ i }}</a>
+    </li>
+    {% endfor %}
+    {% if recent_orders.has_next %}
+    <li class="page-item">
+      <a class="page-link" href="?order_page={{ recent_orders.next_page_number }}&product_page={{ recent_products.number }}">»</a>
+    </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-6">
+        <div class="card h-100">
+          <div class="card-header bg-white fw-semibold">Recently Added Products</div>
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Product</th>
+                  <th>Brand</th>
+                  <th>Status</th>
+                  <th>Price</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for p in recent_products %}
+                <tr>
+                  <td>{{ p.title }}</td>
+                  <td>{{ p.brand_name|default:"—" }}</td>
+                  <td>
+                    {% if p.approved %}
+                    <span class="badge bg-success">Approved</span>
+                    {% else %}
+                    <span class="badge bg-warning text-dark">Pending</span>
+                    {% endif %}
+                  </td>
+                  <td>₹{{ p.price|floatformat:0 }}</td>
+                  <td>{{ p.created_at|date:"M d, Y" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted">No products added yet</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% if recent_products.paginator.num_pages > 1 %}
+<nav aria-label="Products pagination" class="mt-2">
+  <ul class="pagination justify-content-center pagination-sm mb-0">
+    {% if recent_products.has_previous %}
+    <li class="page-item">
+      <a class="page-link" href="?order_page={{ recent_orders.number }}&product_page={{ recent_products.previous_page_number }}">«</a>
+    </li>
+    {% endif %}
+    {% for i in recent_products.paginator.page_range %}
+    <li class="page-item {% if i == recent_products.number %}active{% endif %}">
+      <a class="page-link" href="?order_page={{ recent_orders.number }}&product_page={{ i }}">{{ i }}</a>
+    </li>
+    {% endfor %}
+    {% if recent_products.has_next %}
+    <li class="page-item">
+      <a class="page-link" href="?order_page={{ recent_orders.number }}&product_page={{ recent_products.next_page_number }}">»</a>
+    </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if admin.is_superadmin %}
+    <!-- Top Brands -->
+    <div class="row mt-4 g-3">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-white fw-semibold">Top Performing Brands</div>
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Brand</th>
+                  <th>Visits</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for b in top_brands %}
+                <tr>
+                  <td>{{ b.name }}</td>
+                  <td>{{ b.visits }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="2" class="text-center text-muted">No data</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</main>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('chart');
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: {{ chart_labels|safe }},
+    datasets: [{
+      label: '{{ admin.is_superadmin|yesno:"Sales Trend,Product Uploads" }}',
+      data: {{ chart_values|safe }},
+      borderColor: '#0d6efd',
+      backgroundColor: 'rgba(13,110,253,0.1)',
+      borderWidth: 2,
+      tension: 0.4,
+      fill: true
+    }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+});
+</script>
+
+{% endblock %}

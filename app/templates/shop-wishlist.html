@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}My Wishlist{% endblock %}
+{% block content %}
+
+<main class="py-5">
+  <div class="container">
+    <div class="row mb-4">
+      <div class="col-12">
+        <h2 class="fw-bold">My Wishlist</h2>
+        <p class="text-muted">You have {{ items|length }} item{{ items|pluralize }} saved for later.</p>
+      </div>
+    </div>
+
+    {% if items %}
+    <div class="table-responsive">
+      <table class="table align-middle text-nowrap">
+        <thead class="table-light">
+          <tr>
+            <th>Product</th>
+            <th>Price</th>
+            <th>Status</th>
+            <th>Action</th>
+            <th>Remove</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr id="wishlistItem{{ item.product_id }}">
+            <td>
+              <div class="d-flex align-items-center">
+                <img src="/media/{{ item.main_image }}" alt="{{ item.title }}" class="icon-shape icon-xxl me-3 rounded">
+                <div>
+                  <h6 class="mb-1">
+                    <a href="{% url 'view-product' item.product_id %}" class="text-decoration-none text-dark">
+                      {{ item.title }}
+                    </a>
+                  </h6>
+                </div>
+              </div>
+            </td>
+            <td>₹{{ item.sale_price|default:item.price|floatformat:2 }}</td>
+            <td>
+              {% if item.stock > 0 %}
+                <span class="badge bg-success">In Stock</span>
+              {% else %}
+                <span class="badge bg-danger">Out of Stock</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if item.stock > 0 %}
+              <button class="btn btn-sm btn-primary" id="addBtn{{ item.product_id }}"
+                onclick="wishlistAddToCart({{ item.product_id }})">
+                Add to Cart
+              </button>
+              {% else %}
+              <button class="btn btn-sm btn-secondary" disabled>Coming soon</button>
+              {% endif %}
+            </td>
+            <td>
+              <a href="javascript:void(0);" class="text-danger" onclick="removeWishlistItem({{ item.product_id }})">
+                <i class="feather-icon icon-trash-2"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+      <h4 class="text-muted">Your wishlist is empty 💔</h4>
+      <a href="{% url 'index' %}" class="btn btn-primary mt-3">Start Shopping</a>
+    </div>
+    {% endif %}
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+async function wishlistAddToCart(productId) {
+  const csrfToken = '{{ csrf_token }}';
+  const button = document.getElementById(`addBtn${productId}`);
+  const row = document.getElementById(`wishlistItem${productId}`);
+
+  // disable button while loading
+  button.disabled = true;
+  button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Adding...';
+
+  const res = await fetch(`/wishlist-add-to-cart/${productId}/`, {
+    method: "POST",
+    headers: { "X-CSRFToken": csrfToken },
+  });
+  const data = await res.json();
+
+  if (data.status === "moved") {
+    // ✅ show popup
+    Swal.fire({
+      icon: "success",
+      title: "Added to Cart 🛒",
+      text: "Product successfully moved to cart.",
+      toast: true,
+      position: "top-end",
+      showConfirmButton: false,
+      timer: 1500,
+      timerProgressBar: true,
+      background: "#f6fff5",
+      iconColor: "#28a745"
+    });
+
+    // ✅ change button text temporarily
+    button.classList.remove("btn-primary");
+    button.classList.add("btn-success");
+    button.innerHTML = "Added to Cart ✅";
+
+    updateWishlistCount(-1);
+    updateCartCount(1);
+
+    // ✅ remove the row smoothly after delay
+    setTimeout(() => {
+      row.style.transition = "opacity 0.5s";
+      row.style.opacity = "0";
+      setTimeout(() => row.remove(), 500);
+    }, 1500);
+
+  } else if (data.status === "out_of_stock") {
+    button.disabled = true;
+    button.classList.remove("btn-primary");
+    button.classList.add("btn-secondary");
+    button.innerText = "Out of Stock";
+    Swal.fire({
+      icon: "error",
+      title: "Out of Stock",
+      text: "This item is currently unavailable.",
+      confirmButtonColor: "#d33"
+    });
+  } else if (data.status === "login_required") {
+    Swal.fire({
+      icon: "warning",
+      title: "Login Required",
+      text: "Please login to continue.",
+      confirmButtonText: "Login Now",
+      confirmButtonColor: "#ff9900"
+    }).then(r => {
+      if (r.isConfirmed) window.location.href = "{% url 'userlogin' %}";
+    });
+  } else {
+    button.disabled = false;
+    button.innerHTML = "Add to Cart";
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: data.message || "Something went wrong.",
+    });
+  }
+}
+
+async function removeWishlistItem(productId) {
+  const csrfToken = '{{ csrf_token }}';
+  const row = document.getElementById(`wishlistItem${productId}`);
+
+  const res = await fetch(`/remove-from-wishlist/${productId}/`, {
+    method: "POST",
+    headers: { "X-CSRFToken": csrfToken }
+  });
+  const data = await res.json();
+
+  if (data.status === "removed") {
+    Swal.fire({
+      icon: "success",
+      title: "Removed ❤️",
+      text: "Item removed from wishlist.",
+      toast: true,
+      position: "top-end",
+      showConfirmButton: false,
+      timer: 1500,
+      timerProgressBar: true,
+      background: "#fff5f5",
+      iconColor: "#dc3545"
+    });
+
+    updateWishlistCount(-1);
+    row.style.transition = "opacity 0.5s";
+    row.style.opacity = "0";
+    setTimeout(() => row.remove(), 500);
+  }
+}
+
+function updateCartCount(change) {
+  const badge = document.getElementById('cartCountBadge');
+  if (badge) {
+    let count = parseInt(badge.textContent) || 0;
+    badge.textContent = Math.max(0, count + change);
+  }
+}
+
+function updateWishlistCount(change) {
+  const badge = document.getElementById('wishlistBadge');
+  if (badge) {
+    let count = parseInt(badge.textContent) || 0;
+    badge.textContent = Math.max(0, count + change);
+  }
+}
+</script>
+
+{% endblock %}

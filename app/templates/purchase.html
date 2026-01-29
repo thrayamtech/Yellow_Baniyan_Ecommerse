@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Checkout | Buy Now{% endblock %}
+{% block content %}
+
+<main class="bg-light py-5">
+  <div class="container">
+    <!-- 🧭 Checkout Progress -->
+    <div class="checkout-steps mb-5 text-center">
+      <ul class="list-inline d-inline-flex justify-content-center mb-0">
+        <li class="list-inline-item mx-3 step active">Cart</li>
+        <li class="list-inline-item mx-3 step active">Address</li>
+        <li class="list-inline-item mx-3 step active">Payment</li>
+        <li class="list-inline-item mx-3 step">Confirm</li>
+      </ul>
+    </div>
+
+    <!-- ✅ FIXED ROW ALIGNMENT -->
+    <div class="row g-4 align-items-start">
+      <!-- LEFT SIDE -->
+      <div class="col-lg-7">
+        <!-- Product Summary -->
+        <div class="card shadow-sm border-0 rounded-4 mb-4">
+          <div class="card-body p-4">
+            <h5 class="fw-bold mb-4 border-bottom pb-2">
+              {% if is_cart_checkout %} <i class="bi bi-bag-check"></i> Your Cart Items{% else %}<i class="bi bi-cart-check"></i> Product Details{% endif %}
+            </h5>
+
+            {% if is_cart_checkout %}
+            {% for item in cart_items %}
+            <div class="d-flex align-items-center mb-4 pb-3 border-bottom">
+              <img src="/media/{{ item.main_image }}" class="rounded-3 me-3 border"
+                style="width:90px;height:90px;object-fit:cover;">
+              <div class="flex-grow-1">
+                <h6 class="fw-semibold mb-1">{{ item.title }}</h6>
+                <p class="small text-muted mb-1">Qty: {{ item.quantity }}</p>
+                <p class="fw-semibold text-dark mb-0">₹{{ item.total_price }}</p>
+              </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="d-flex align-items-center mb-3">
+              <img src="/media/{{ product.main_image }}" class="rounded-3 border me-3"
+                style="width:110px;height:110px;object-fit:cover;">
+              <div>
+                <h5 class="fw-semibold mb-1">{{ product.title }}</h5>
+                <p class="text-muted small mb-1">
+                  Category: {{ product.category_name|default:"N/A" }}
+                </p>
+                <p class="mb-0 fw-semibold text-dark">
+                  {% if product.sale_price %}
+                  ₹{{ product.sale_price }}
+                  <span class="text-decoration-line-through text-muted small">₹{{ product.price }}</span>
+                  {% else %}
+                  ₹{{ product.price }}
+                  {% endif %}
+                </p>
+                <p class="small text-success mt-1 mb-0">In Stock</p>
+              </div>
+            </div>
+            <p class="fw-semibold mt-3 mb-1">Description</p>
+            <p class="text-muted small mb-0">
+              {{ product.description|truncatewords:25|default:"No description available." }}
+            </p>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Shipping Address -->
+        <div class="card border-0 shadow-sm mb-4 rounded-4">
+          <div class="card-body p-4">
+            <h6 class="fw-bold text-dark mb-3 border-bottom pb-2">
+              <i class="bi bi-geo-alt-fill"></i> Select Shipping Address
+            </h6>
+
+            {% if addresses %}
+            <form method="get" action="">
+              <div class="list-group">
+                {% for addr in addresses %}
+                <label
+                  class="list-group-item d-flex align-items-start {% if addr.id == default_address.id %}border-primary shadow-sm{% endif %}">
+                  <input class="form-check-input me-3 mt-1" type="radio" name="address_id" value="{{ addr.id }}"
+                    {% if addr.id == default_address.id %}checked{% endif %} onchange="this.form.submit()">
+                  <div>
+                    <h6 class="fw-semibold mb-1">{{ addr.first_name }} {{ addr.last_name }}</h6>
+                    <p class="mb-1 small text-muted">
+                      {{ addr.address_line1 }}, {{ addr.city }}, {{ addr.state }}
+                    </p>
+                    <p class="mb-1 small text-muted">
+                      {{ addr.country }} - {{ addr.zip_code }}
+                    </p>
+                    <p class="mb-0 small text-muted">Ph: {{ addr.phone }}</p>
+                    {% if addr.is_default %}
+                    <span class="badge bg-primary-subtle text-primary mt-2">Default</span>
+                    {% endif %}
+                  </div>
+                </label>
+                {% endfor %}
+              </div>
+            </form>
+            {% else %}
+            <p class="text-danger mb-0">No addresses found.
+              <a href="{% url 'address' %}" class="fw-semibold text-decoration-none">Add Address</a>
+            </p>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- 💳 Payment Methods -->
+        <div class="card border-0 shadow-sm mb-4 rounded-4">
+          <div class="card-body p-4">
+            <h6 class="fw-bold text-dark mb-3 border-bottom pb-2">
+              <i class="bi bi-wallet2"></i> Select Payment Method
+            </h6>
+
+            <form id="paymentMethodForm">
+              <!-- COD -->
+              <label class="payment-option border rounded-3 p-3 mb-3 d-flex align-items-center"
+                onclick="selectPayment('cod')">
+                <input type="radio" name="payment_method" value="cod" class="form-check-input me-3" checked>
+                <div class="flex-grow-1">
+                  <h6 class="fw-semibold mb-1">Cash on Delivery (COD)</h6>
+                  <p class="small text-muted mb-0">Pay with cash upon delivery of your order.</p>
+                </div>
+                <i class="bi bi-truck fs-4 text-success"></i>
+              </label>
+
+              <!-- Debit/Credit Card -->
+              <label class="payment-option border rounded-3 p-3 mb-3 d-flex align-items-center"
+                onclick="selectPayment('card')">
+                <input type="radio" name="payment_method" value="card" class="form-check-input me-3">
+                <div class="flex-grow-1">
+                  <h6 class="fw-semibold mb-1">Credit / Debit Card</h6>
+                  <p class="small text-muted mb-0">Visa, MasterCard, or RuPay supported.</p>
+                </div>
+                <i class="bi bi-credit-card-2-front fs-4 text-danger"></i>
+              </label>
+
+              <div id="cardFields" class="bg-light border rounded-3 p-3 mb-3 d-none">
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label small fw-semibold">Card Number</label>
+                    <input type="text" class="form-control" placeholder="XXXX XXXX XXXX XXXX" maxlength="19">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small fw-semibold">Expiry Date</label>
+                    <input type="text" class="form-control" placeholder="MM/YY" maxlength="5">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small fw-semibold">CVV</label>
+                    <input type="password" class="form-control" placeholder="***" maxlength="3">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label small fw-semibold">Cardholder Name</label>
+                    <input type="text" class="form-control" placeholder="John Doe">
+                  </div>
+                </div>
+              </div>
+
+              <!-- UPI -->
+              <label class="payment-option border rounded-3 p-3 mb-3 d-flex align-items-center"
+                onclick="selectPayment('upi')">
+                <input type="radio" name="payment_method" value="upi" class="form-check-input me-3">
+                <div class="flex-grow-1">
+                  <h6 class="fw-semibold mb-1">UPI Payment</h6>
+                  <p class="small text-muted mb-0">Pay instantly using your UPI ID.</p>
+                </div>
+                <i class="bi bi-phone-vibrate fs-4 text-info"></i>
+              </label>
+
+              <div id="upiField" class="bg-light border rounded-3 p-3 mb-3 d-none">
+                <label class="form-label small fw-semibold">Enter your UPI ID</label>
+                <input type="text" class="form-control" placeholder="example@upi">
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT SIDE (Amazon-Style Floating Summary) -->
+<div class="col-lg-5">
+  <div class="sticky-summary">
+    <!-- Order Summary -->
+    <div class="card order-summary border shadow-sm rounded-3 mb-4">
+      <div class="card-body p-4">
+        <h6 class="fw-bold text-dark mb-3 border-bottom pb-2">
+          <i class="bi bi-receipt"></i>Order Summary
+        </h6>
+
+        <div class="d-flex justify-content-between mb-2 small">
+          <span>Subtotal:</span>
+          <span id="subtotalAmount">
+            {% if is_cart_checkout %}
+            ₹{{ subtotal }}
+            {% else %}
+            ₹{{ product.sale_price|default:product.price }}
+            {% endif %}
+          </span>
+        </div>
+
+        <div class="d-flex justify-content-between mb-2 small" id="coinDiscountRow" style="display:none;">
+          <span>Leaves Discount:</span>
+          <span class="text-danger fw-semibold" id="coinDiscount">-₹0</span>
+        </div>
+
+        <div class="d-flex justify-content-between mb-2 small">
+  <span>Shipping Fee:</span>
+  <span class="fw-semibold text-dark">₹{{ shipping_fee }}</span>
+</div>
+
+
+        <hr>
+        <div class="d-flex justify-content-between align-items-center">
+          <strong>Total:</strong>
+          <h4 id="finalPrice" class="fw-bold text-dark" data-amount="{% if is_cart_checkout %}{{ total_with_shipping|default:subtotal }}{% else %}{{ total_price|default:subtotal }}{% endif %}">
+  ₹{% if is_cart_checkout %}
+      {{ total_with_shipping|default:subtotal }}
+    {% else %}
+      {{ total_price|default:product.price }}
+  {% endif %}
+</h4>
+
+
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Leaves -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+      <div class="card-body p-4">
+        <h6 class="fw-bold text-dark mb-3 border-bottom pb-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-leaf-fill me-2 " viewBox="0 0 16 16" style="color: green;" >
+  <path d="M1.4 1.7c.217.289.65.84 1.725 1.274 1.093.44 2.885.774 5.834.528 2.02-.168 3.431.51 4.326 1.556C14.161 6.082 14.5 7.41 14.5 8.5q0 .344-.027.734C13.387 8.252 11.877 7.76 10.39 7.5c-2.016-.288-4.188-.445-5.59-2.045-.142-.162-.402-.102-.379.112.108.985 1.104 1.82 1.844 2.308 2.37 1.566 5.772-.118 7.6 3.071.505.8 1.374 2.7 1.75 4.292.07.298-.066.611-.354.715a.7.7 0 0 1-.161.042 1 1 0 0 1-1.08-.794c-.13-.97-.396-1.913-.868-2.77C12.173 13.386 10.565 14 8 14c-1.854 0-3.32-.544-4.45-1.435-1.124-.887-1.889-2.095-2.39-3.383-1-2.562-1-5.536-.65-7.28L.73.806z"/>
+</svg>Leaves
+        </h6>
+        {% if user_coins > 0 %}
+        <p>You have <strong>{{ user_coins }}</strong> Leaves.</p>
+        <p class="small text-muted mb-2">Each Leaf = ₹1 discount</p>
+        <div class="form-check mt-2">
+          <input class="form-check-input" type="checkbox" id="useCoins" onchange="toggleCoins()">
+          <label class="form-check-label fw-semibold" for="useCoins">Redeem my Leaves</label>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">You have 0 Leaves. Earn 1 coin for every ₹100 spent.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Pay Button -->
+    <form method="POST"
+      action="{% if is_cart_checkout %}{% url 'cart-demo-payment' %}{% else %}{% url 'demo-payment' product.id %}{% endif %}">
+      {% csrf_token %}
+      <input type="hidden" name="use_coins" id="useCoinsInput">
+      <button class="btn btn-warning w-100 py-3 fs-6 fw-semibold shadow-sm text-dark" onclick="setCoinsBeforeSubmit()">
+        <i class="bi bi-bag-check-fill me-2"></i>Place Order (Demo)
+      </button>
+    </form>
+  </div>
+</div>
+
+    </div>
+  </div>
+</main>
+
+<!-- 🪄 STYLING -->
+<style>
+  main {
+    font-family: 'Poppins', sans-serif;
+  }
+
+  .card {
+    transition: all 0.2s ease-in-out;
+  }
+
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07);
+  }
+
+  .checkout-steps .step {
+    position: relative;
+    color: #999;
+    font-weight: 500;
+  }
+
+  .checkout-steps .step.active {
+    color: #0d6efd;
+  }
+
+  .checkout-steps .step.active::after {
+    content: "●";
+    font-size: 10px;
+    color: #0d6efd;
+    margin-left: 6px;
+  }
+
+  .border-bottom {
+    border-color: #e8e8e8 !important;
+  }
+
+  .btn-dark {
+    background: linear-gradient(90deg, #000 0%, #333 100%);
+    border: none;
+  }
+
+  .btn-dark:hover {
+    background: linear-gradient(90deg, #333 0%, #000 100%);
+  }
+
+  @media (max-width: 991px) {
+    .sticky-top {
+      position: static !important;
+    }
+  }
+
+  @media (min-width: 992px) {
+    .col-lg-5 .sticky-top {
+      position: sticky !important;
+      top: 90px !important;
+      align-self: flex-start;
+    }
+
+    .row.align-items-start {
+      display: flex;
+    }
+
+    .col-lg-7,
+    .col-lg-5 {
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  .payment-option {
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .payment-option:hover {
+    background-color: #f8f9fa;
+    border-color: #0d6efd !important;
+  }
+
+  .payment-option input[type="radio"] {
+    transform: scale(1.2);
+  }
+
+  #cardFields,
+  #upiField {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-5px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
+
+<!-- ⚙️ JS -->
+<script>
+  function toggleCoins() {
+    const checkbox = document.getElementById('useCoins');
+    const priceEl = document.getElementById('finalPrice');
+    const discountRow = document.getElementById('coinDiscountRow');
+    const discountEl = document.getElementById('coinDiscount');
+    const base = parseFloat(priceEl.dataset.amount);
+    const discount = {{ user_coins }};
+    if (checkbox.checked) {
+      const newTotal = Math.max(base - discount, 0);
+      priceEl.innerText = "₹" + newTotal.toFixed(2);
+      discountEl.innerText = "-₹" + discount.toFixed(2);
+      discountRow.style.display = "flex";
+    } else {
+      priceEl.innerText = "₹" + base.toFixed(2);
+      discountEl.innerText = "-₹0";
+      discountRow.style.display = "none";
+    }
+  }
+
+  function setCoinsBeforeSubmit() {
+    document.getElementById('useCoinsInput').value =
+      document.getElementById('useCoins').checked ? 'on' : 'off';
+  }
+
+  function selectPayment(method) {
+    const cardFields = document.getElementById("cardFields");
+    const upiField = document.getElementById("upiField");
+    cardFields.classList.add("d-none");
+    upiField.classList.add("d-none");
+    if (method === "card") {
+      cardFields.classList.remove("d-none");
+    } else if (method === "upi") {
+      upiField.classList.remove("d-none");
+    }
+  }
+</script>
+
+{% endblock %}

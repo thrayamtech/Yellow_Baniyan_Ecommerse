@@ -1,0 +1,122 @@
+{% extends 'superadmin/adminbase.html' %}
+{% load static %}
+{% block title %}Admin Profile{% endblock %}
+{% block content %}
+
+<main class="main-content-wrapper">
+  <div class="container-fluid py-4">
+
+    <h2 class="fw-bold mb-4">Admin Profile</h2>
+
+    <!-- Profile Details -->
+    <div class="card mb-4">
+      <div class="card-header fw-semibold bg-white">Profile Information</div>
+      <div class="card-body">
+        <form method="POST" enctype="multipart/form-data" action="{% url 'update-admin-profile' %}">
+          {% csrf_token %}
+          <input type="hidden" name="update_profile" value="1">
+
+          <div class="row g-3 align-items-center">
+            <div class="col-md-3 text-center">
+              <img src="/media/{{ admin.photo|default:'default-avatar.png' }}" class="rounded-circle img-fluid" style="width:120px;height:120px;object-fit:cover;">
+              <div class="mt-2">
+                <input type="file" name="photo" class="form-control form-control-sm">
+              </div>
+            </div>
+            <div class="col-md-9">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Username</label>
+                  <input type="text" name="username" value="{{ admin.username }}" class="form-control">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Email</label>
+                  <input type="email" name="email" value="{{ admin.email }}" class="form-control">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Phone</label>
+                  <input type="text" name="phone" value="{{ admin.phone }}" class="form-control">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Organization</label>
+                  <input type="text" name="organization" value="{{ admin.organization }}" class="form-control">
+                </div>
+                <div class="col-md-12">
+                  <label class="form-label">Address</label>
+                  <textarea name="address" class="form-control" rows="2">{{ admin.address }}</textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 text-end">
+            <button type="submit" class="btn btn-primary px-4">Update Profile</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Change Password -->
+    <div class="card mb-4">
+      <div class="card-header fw-semibold bg-white">Change Password</div>
+      <div class="card-body">
+        <form method="POST" action="{% url 'update-admin-profile' %}">
+          {% csrf_token %}
+          <input type="hidden" name="change_password" value="1">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Current Password</label>
+              <input type="password" name="current_password" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">New Password</label>
+              <input type="password" name="new_password" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Confirm Password</label>
+              <input type="password" name="confirm_password" class="form-control" required>
+            </div>
+          </div>
+          <div class="mt-3 text-end">
+            <button type="submit" class="btn btn-warning px-4">Change Password</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    {% if not admin.is_superadmin %}
+    <!-- Plan Information -->
+    <div class="card">
+      <div class="card-header fw-semibold bg-white">Subscription Plan</div>
+      <div class="card-body">
+        {% if admin.current_plan %}
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <p class="mb-1"><strong>Current Plan:</strong> {{ admin.current_plan }}</p>
+            <p class="mb-1"><strong>Product Limit:</strong> {{ admin.plan_limit }}</p>
+            <p class="mb-1"><strong>Plan Start:</strong> {{ admin.plan_start|date:"M d, Y" }}</p>
+            <p class="mb-1"><strong>Status:</strong>
+              {% if admin.plan_active %}
+              <span class="badge bg-success">Active</span>
+              {% else %}
+              <span class="badge bg-secondary">Inactive</span>
+              {% endif %}
+            </p>
+          </div>
+          <div class="col-md-4 text-end">
+            <a href="{% url 'payment' %}" class="btn btn-outline-primary">Upgrade Plan</a>
+          </div>
+        </div>
+        {% else %}
+        <div class="text-center">
+          <p>No active plan found.</p>
+          <a href="{% url 'payment' %}" class="btn btn-primary">Choose Plan</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</main>
+
+{% endblock %}

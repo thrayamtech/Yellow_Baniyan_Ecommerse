@@ -1,0 +1,51 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <title>Verify OTP - Admin Reset</title>
+   <link href="{% static 'assets/css/theme.min.css' %}" rel="stylesheet">
+</head>
+<body class="bg-light">
+<div class="container py-5">
+   <div class="row justify-content-center">
+      <div class="col-md-5">
+         <div class="card shadow p-4">
+            <h3 class="text-center mb-3">Verify OTP</h3>
+
+            {% if messages %}
+              {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} alert-dismissible fade show" role="alert">
+                  {{ message }}
+                  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+              {% endfor %}
+            {% endif %}
+
+            <form method="POST" action="{% url 'admin-reset-verify' %}">
+              {% csrf_token %}
+              <div class="mb-3">
+                 <label class="form-label">Enter OTP</label>
+                 <input type="text" name="otp" class="form-control" placeholder="Enter 6-digit code" required>
+              </div>
+              <div class="mb-3">
+                 <label class="form-label">New Password</label>
+                 <input type="password" name="new_password" class="form-control" placeholder="New password" required>
+              </div>
+              <div class="mb-3">
+                 <label class="form-label">Confirm Password</label>
+                 <input type="password" name="confirm_password" class="form-control" placeholder="Confirm new password" required>
+              </div>
+              <button type="submit" class="btn btn-primary w-100">Reset Password</button>
+           </form>
+
+           <div class="text-center mt-3">
+              <a href="{% url 'adminlogin' %}" class="text-decoration-none">Back to Login</a>
+           </div>
+         </div>
+      </div>
+   </div>
+</div>
+<script src="{% static 'assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>

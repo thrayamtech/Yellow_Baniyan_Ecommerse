@@ -1,0 +1,1128 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+
+<!-- Required meta tags -->
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+<meta content="Codescandy" name="author" />
+<title>{% block title %} User Home - Yellow Banyan {% endblock %}</title>
+<link href="{% static 'assets/libs/tiny-slider/dist/tiny-slider.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/libs/slick-carousel/slick/slick.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/libs/slick-carousel/slick/slick-theme.css' %}" rel="stylesheet" />
+<!-- Favicon icon-->
+<link rel="shortcut icon" type="image/x-icon" href="{% static 'assets/images/favicon/favicon.ico' %}" />
+
+<!-- Libs CSS -->
+<link href="{% static 'assets/libs/bootstrap-icons/font/bootstrap-icons.min.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/libs/feather-webfont/dist/feather-icons.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/libs/simplebar/dist/simplebar.min.css' %}" rel="stylesheet" />
+
+<!-- Theme CSS -->
+<link rel="stylesheet" href="{% static 'assets/css/theme.min.css' %}" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-M8S4MT3EYG"></script>
+
+<style>
+   /* ===================================================
+   📱 RESPONSIVE HEADER WITH USERNAME + DROPDOWN
+   =================================================== */
+   @media (max-width: 576px) {
+
+      /* Header styling */
+      header {
+         background: #fff !important;
+         border-bottom: 1px solid #eee !important;
+         padding: 0.5rem 0.8rem !important;
+         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      }
+
+      /* Row layout: logo left, icons right */
+      header .row.w-100.align-items-center.g-0.gx-lg-3 {
+         display: flex !important;
+         align-items: center !important;
+         justify-content: space-between !important;
+         flex-wrap: nowrap !important;
+      }
+
+      /* Logo resize */
+      header .navbar-brand img {
+         width: 95px !important;
+         height: auto !important;
+      }
+
+      /* Right side layout */
+      header .d-flex.align-items-center.lh-1 {
+         display: flex !important;
+         align-items: center !important;
+         gap: 0.6rem !important;
+         justify-content: flex-end !important;
+      }
+
+      /* Username next to icon */
+      header .username-text {
+         font-weight: 600 !important;
+         color: #333 !important;
+         font-size: 0.9rem !important;
+         margin-left: 0.2rem !important;
+      }
+
+      /* Profile dropdown */
+      .user-dropdown {
+         position: relative !important;
+         display: inline-block !important;
+      }
+
+      .user-dropdown-menu {
+         display: none;
+         position: absolute;
+         right: 0;
+         top: 120%;
+         background-color: #fff;
+         border: 1px solid #ddd;
+         border-radius: 6px;
+         box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+         min-width: 130px;
+         z-index: 999;
+      }
+
+      .user-dropdown-menu a {
+         display: block;
+         padding: 8px 12px;
+         text-decoration: none;
+         color: #333;
+         font-size: 0.9rem;
+      }
+
+      .user-dropdown-menu a:hover {
+         background-color: #f7f7f7;
+      }
+
+      /* Show dropdown when user taps icon/name */
+      .user-dropdown:focus-within .user-dropdown-menu,
+      .user-dropdown:hover .user-dropdown-menu {
+         display: block;
+      }
+
+      /* Icon sizing */
+      header .list-inline-item a svg,
+      header .navbar-toggler svg {
+         width: 25px !important;
+         height: 25px !important;
+         color: #222 !important;
+      }
+
+      /* Badge */
+      header .badge {
+         font-size: 0.55rem !important;
+         padding: 0.25em 0.4em !important;
+         top: -5px !important;
+         right: -6px !important;
+         left: auto !important;
+         background: #ffb300 !important;
+         border: 1px solid #fff !important;
+      }
+
+      /* Fix spacing */
+      header .list-inline-item {
+         margin-right: 0.4rem !important;
+      }
+
+      html,
+      body {
+         overflow-x: hidden !important;
+      }
+   }
+</style>
+
+<script>
+   window.dataLayer = window.dataLayer || [];
+   function gtag() {
+      dataLayer.push(arguments);
+   }
+   gtag("js", new Date());
+
+   gtag("config", "G-M8S4MT3EYG");
+</script>
+<script type="text/javascript">
+   (function (c, l, a, r, i, t, y) {
+      c[a] =
+         c[a] ||
+         function () {
+            (c[a].q = c[a].q || []).push(arguments);
+         };
+      t = l.createElement(r);
+      t.async = 1;
+      t.src = "https://www.clarity.ms/tag/" + i;
+      y = l.getElementsByTagName(r)[0];
+      y.parentNode.insertBefore(t, y);
+   })(window, document, "clarity", "script", "kuc8w5o9nt");
+</script>
+</head>
+
+<body>
+   <!-- navigation -->
+   <header class="py-lg-5 py-4 px-0 border-bottom border-bottom-lg-0">
+      <div class="container-fluid">
+         <div class="row w-100 align-items-center g-0 gx-lg-3">
+            <div class="col-xxl-9 col-lg-8">
+               <div class="d-flex align-items-center">
+                  <a class="navbar-brand d-none d-lg-block" href="{% url 'index' %}">
+                     <img src="{% static 'assets/images/logo/freshcart-logo.svg' %}" alt="eCommerce HTML Template" />
+                  </a>
+                  <div class="w-100 ms-4 d-none d-lg-block">
+                     <form action="{% url 'search' %}" method="get">
+                        <div class="input-group">
+                           <input type="text" name="q" class="form-control w-45" placeholder="Search for products"
+                              required>
+                           <button class="input-group-text bg-transparent" type="submit">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round" class="feather feather-search">
+                                 <circle cx="11" cy="11" r="8"></circle>
+                                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                              </svg>
+                           </button>
+                        </div>
+                     </form>
+
+                  </div>
+               </div>
+               <div class="d-flex justify-content-between w-100 d-lg-none">
+                  <a class="navbar-brand" href="{% url 'index' %}">
+                     <img src="{% static 'assets/images/logo/freshcart-logo.svg' %}" alt="eCommerce HTML Template" />
+                  </a>
+                  <div class="d-flex align-items-center lh-1">
+                     <div class="list-inline me-4">
+                        <div class="list-inline-item">
+                           {% if request.session.user_name %}
+<!-- ✅ Logged-in User with Profile Dropdown -->
+<div class="dropdown d-flex align-items-center text-nowrap">
+   <a href="#"
+      class="d-flex align-items-center text-reset dropdown-toggle"
+      data-bs-toggle="dropdown"
+      aria-expanded="false">
+      <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2"
+           style="width:32px; height:32px; font-size:0.9rem;">
+         {{ request.session.user_name|first|upper }}
+      </div>
+      <span class="fw-semibold text-dark d-none d-md-inline">{{ request.session.user_name }}</span>
+   </a>
+
+   <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width: 240px;">
+      
+      <!-- User info -->
+      <li class="px-3 py-2">
+         <div class="fw-semibold text-dark">
+            {{ request.session.user_name }}
+         </div>
+         <div class="small text-muted text-truncate">
+            {{ request.session.user_email }}
+         </div>
+          <small class="text-muted">
+             {{ user_coins|default:0 }} Leaves
+         </small>
+      </li>
+
+      <li><hr class="dropdown-divider"></li>
+
+      <!-- Menu items -->
+      <li>
+         <a class="dropdown-item" href="{% url 'profile' %}">
+            <i class="bi bi-person me-2"></i> My Profile
+         </a>
+      </li>
+      <li>
+         <a class="dropdown-item" href="{% url 'order-details' %}">
+            <i class="bi bi-box-seam me-2"></i> My Orders
+         </a>
+      </li>
+
+      <li><hr class="dropdown-divider"></li>
+
+      <li>
+         <a class="dropdown-item text-danger" href="{% url 'userlogout' %}">
+            <i class="bi bi-box-arrow-right me-2"></i> Logout
+         </a>
+      </li>
+   </ul>
+</div>
+
+{% else %}
+<!-- 👤 Login button (DO NOT TOUCH – modal safe) -->
+<a href="#"
+   class="text-reset d-flex align-items-center"
+   data-bs-toggle="modal"
+   data-bs-target="#userModal">
+   <i class="bi bi-person-circle fs-5"></i>
+   <span class="ms-1 d-none d-md-inline">Login</span>
+</a>
+{% endif %}
+
+
+                        </div>
+                        <div class="list-inline-item">
+  <a href="{% url 'cart' %}" class="text-reset position-relative" title="My Cart" role="button"
+     aria-controls="offcanvasRight">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+         stroke-linejoin="round" class="feather feather-shopping-bag">
+      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <path d="M16 10a4 4 0 0 1-8 0"></path>
+    </svg>
+    <span id="cartCountBadge"
+          class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark shadow-sm"
+          style="font-size: 0.7rem; min-width: 1.3rem;">
+      {{ cart_count|default:0 }}
+      <span class="visually-hidden">cart items</span>
+    </span>
+  </a>
+</div>
+                     </div>
+<div class="list-inline-item me-5">
+                     <a href="{% url 'wishlist' %}" class="text-reset position-relative">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                           class="feather feather-heart">
+                           <path
+                              d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+                           </path>
+                        </svg>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning">
+                           0
+                           <span class="visually-hidden">unread messages</span>
+                        </span>
+                     </a>
+                  </div>
+
+                     <!-- Button -->
+                     <button class="navbar-toggler collapsed" type="button" data-bs-toggle="offcanvas"
+                        data-bs-target="#navbar-default" aria-controls="navbar-default" aria-label="Toggle navigation">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor"
+                           class="bi bi-text-indent-left text-primary" viewBox="0 0 16 16">
+                           <path
+                              d="M2 3.5a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5zm.646 2.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1 0 .708l-2 2a.5.5 0 0 1-.708-.708L4.293 8 2.646 6.354a.5.5 0 0 1 0-.708zM7 6.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5zm0 3a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5zm-5 3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z" />
+                        </svg>
+                     </button>
+                  </div>
+               </div>
+            </div>
+            <div class="col-xxl-3 col-lg-4 d-flex align-items-center">
+               <div class="list-inline ms-auto d-lg-block d-none">
+                  <div class="list-inline-item me-5">
+   <!-- login -->
+   {% if request.session.user_name %}
+   <!-- ✅ Logged-in User with Profile Dropdown (Desktop) -->
+   <div class="dropdown d-inline-flex align-items-center text-nowrap">
+      <a href="#"
+         class="d-inline-flex align-items-center text-reset dropdown-toggle"
+         data-bs-toggle="dropdown"
+         aria-expanded="false">
+
+         <!-- Avatar -->
+         <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2"
+              style="width:32px; height:32px; font-size:0.9rem;">
+            {{ request.session.user_name|first|upper }}
+         </div>
+
+         <span class="fw-semibold text-dark d-none d-md-inline">
+            {{ request.session.user_name }}
+         </span>
+      </a>
+
+      <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width:240px;">
+
+         <!-- User info -->
+         <li class="px-3 py-2">
+            <div class="fw-semibold text-dark">
+               {{ request.session.user_name }}
+            </div>
+            <div class="small text-muted text-truncate">
+               {{ request.session.user_email }}
+            </div>
+             <small class="text-muted">
+             {{ user_coins|default:0 }} Leaves
+         </small>
+         </li>
+
+         <li><hr class="dropdown-divider"></li>
+
+         <!-- Menu items -->
+         <li>
+            <a class="dropdown-item" href="{% url 'profile' %}">
+               <i class="bi bi-person me-2"></i> My Profile
+            </a>
+         </li>
+         <li>
+            <a class="dropdown-item" href="{% url 'order-details' %}">
+               <i class="bi bi-box-seam me-2"></i> My Orders
+            </a>
+         </li>
+
+         <li><hr class="dropdown-divider"></li>
+
+         <li>
+            <a class="dropdown-item text-danger" href="{% url 'userlogout' %}">
+               <i class="bi bi-box-arrow-right me-2"></i> Logout
+            </a>
+         </li>
+      </ul>
+   </div>
+
+   {% else %}
+   <!-- 👤 Default login button (UNCHANGED – modal safe) -->
+   <a href="#"
+      class="text-reset"
+      data-bs-toggle="modal"
+      data-bs-target="#userModal">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round"
+           class="feather feather-user">
+         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+         <circle cx="12" cy="7" r="4"></circle>
+      </svg>
+      <span class="ms-1">Login</span>
+   </a>
+   {% endif %}
+   <!-- login end -->
+</div>
+
+                  <!-- ❤️ Wishlist -->
+<div class="list-inline-item me-4">
+  <a href="{% url 'wishlist' %}" class="text-reset position-relative" title="My Wishlist">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+         stroke-linejoin="round" class="feather feather-heart">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06
+               a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78
+               1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+    </svg>
+    <span id="wishlistBadge"
+          class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark shadow-sm"
+          style="font-size: 0.7rem; min-width: 1.3rem;">
+      {{ wishlist_count|default:0 }}
+      <span class="visually-hidden">wishlist items</span>
+    </span>
+  </a>
+</div>
+
+<!-- 🛒 Cart -->
+<div class="list-inline-item">
+  <a href="{% url 'cart' %}" class="text-reset position-relative" title="My Cart" role="button"
+     aria-controls="offcanvasRight">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+         stroke-linejoin="round" class="feather feather-shopping-bag">
+      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <path d="M16 10a4 4 0 0 1-8 0"></path>
+    </svg>
+    <span id="cartCountBadge"
+          class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark shadow-sm"
+          style="font-size: 0.7rem; min-width: 1.3rem;">
+      {{ cart_count|default:0 }}
+      <span class="visually-hidden">cart items</span>
+    </span>
+  </a>
+</div>
+
+               </div>
+            </div>
+         </div>
+      </div>
+   </header>
+
+   <nav class="navbar navbar-expand-lg navbar-dark bg-primary py-0 py-lg-2 navbar-default">
+      <div class="container-fluid">
+         <div class="offcanvas offcanvas-start" tabindex="-1" id="navbar-default" aria-labelledby="navbar-defaultLabel">
+            <div class="offcanvas-header pb-1">
+               <a href="{% url 'index' %}"><img src="{% static 'assets/images/logo/freshcart-logo.svg' %}"
+                     alt="eCommerce HTML Template" /></a>
+               <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+               <div class="d-block d-lg-none mb-4">
+                  <form action="{% url 'search' %}" method="get">
+                     <div class="input-group">
+                        <input type="text" name="q" class="form-control w-45" placeholder="Search for products"
+                           required>
+                        <button class="input-group-text bg-transparent" type="submit">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                              stroke-linejoin="round" class="feather feather-search">
+                              <circle cx="11" cy="11" r="8"></circle>
+                              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                           </svg>
+                        </button>
+                     </div>
+                  </form>
+
+
+               </div>
+               <!-- ✅ MOBILE VIEW: collapsible “All Categories” -->
+               <div class="d-block d-lg-none mb-4">
+                  <a class="btn btn-dark w-100 d-flex justify-content-center align-items-center"
+                     data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false"
+                     aria-controls="collapseExample">
+                     <span class="me-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                           stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                           class="feather feather-grid">
+                           <rect x="3" y="3" width="7" height="7"></rect>
+                           <rect x="14" y="3" width="7" height="7"></rect>
+                           <rect x="14" y="14" width="7" height="7"></rect>
+                           <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                     </span>
+                     All Categories
+                  </a>
+
+                  <div class="collapse mt-2" id="collapseExample">
+                     <div class="card card-body" style="max-height:400px; overflow-y:auto;">
+                        {% if categories_all %}
+                        <ul class="list-unstyled mb-0">
+                           {% for category in categories_all %}
+                           <li class="mb-2">
+                              <a class="dropdown-item fw-semibold text-dark"
+                                 href="{% url 'category-products' category.id %}">
+                                 {{ category.name }}
+                              </a>
+
+
+                              {% if subcategories %}
+                              {% for sub in subcategories %}
+                              {% if sub.category_id == category.id %}
+                              <ul class="list-unstyled ms-3 mb-2">
+                                 <li>
+                                    <a class="dropdown-item small text-muted"
+                                       href="{% url 'category-products' sub.category_id %}?sub={{ sub.id }}">
+                                       {{ sub.name }}
+                                    </a>
+
+                                 </li>
+                              </ul>
+                              {% endif %}
+                              {% endfor %}
+                              {% endif %}
+                           </li>
+                           {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted small mb-0">No categories available</p>
+                        {% endif %}
+                     </div>
+                  </div>
+               </div>
+
+               <!-- ✅ DESKTOP VIEW: dropdown “All Categories” -->
+               <div class="dropdown me-3 d-none d-lg-block">
+                  <button class="btn btn-orange px-6" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown"
+                     aria-expanded="false">
+                     <span class="me-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                           stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"
+                           class="feather feather-grid">
+                           <rect x="3" y="3" width="7" height="7"></rect>
+                           <rect x="14" y="3" width="7" height="7"></rect>
+                           <rect x="14" y="14" width="7" height="7"></rect>
+                           <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                     </span>
+                     All Categories
+                  </button>
+
+                  <ul class="dropdown-menu p-2" aria-labelledby="dropdownMenuButton1"
+                     style="max-height:400px; overflow-y:auto;">
+                     {% if categories_all %}
+                     {% for category in categories_all %}
+                     <li>
+                        <a class="dropdown-item fw-semibold text-dark" href="{% url 'category-products' category.id %}">
+                           {{ category.name }}
+                        </a>
+
+                        {% if subcategories %}
+                        {% for sub in subcategories %}
+                        {% if sub.category_id == category.id %}
+                        <ul class="list-unstyled ms-3 mb-1">
+                           <li>
+                              <a class="dropdown-item small text-muted"
+                                 href="{% url 'category-products' sub.category_id %}?sub={{ sub.id }}">
+                                 {{ sub.name }}
+                              </a>
+
+                           </li>
+                        </ul>
+                        {% endif %}
+                        {% endfor %}
+                        {% endif %}
+                     </li>
+                     <li>
+                        <hr class="dropdown-divider my-1">
+                     </li>
+                     {% endfor %}
+                     {% else %}
+                     <li><a class="dropdown-item text-muted" href="#">No categories found</a></li>
+                     {% endif %}
+                  </ul>
+               </div>
+
+               <div>
+                  <ul class="navbar-nav align-items-center navbar-offcanvas-color">
+                     <li class="nav-item">
+                        <a class="nav-link" href="{% url 'index' %}">Home</a>
+                     </li>
+
+                     <!-- <li class="nav-item">
+                        <a class="nav-link" href="{% url 'about' %}">About Us</a>
+                     </li> -->
+                     <li class="nav-item">
+                        <a href="{% url 'shop-all' %}" class="nav-link">All Products</a>
+                     </li>
+
+                     <!-- <li class="nav-item dropdown">
+                           <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Shop</a>
+                           <ul class="dropdown-menu">
+                              <li><a class="dropdown-item" href="shop-grid.html">Shop Grid - Filter</a></li>
+                              </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                           <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Stores</a>
+                           <ul class="dropdown-menu">
+                              <li><a class="dropdown-item" href="store-list.html">Store List</a></li>
+                              </ul>
+                        </li> -->
+                     <!-- <li class="nav-item dropdown dropdown-fullwidth">
+                           <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Mega menu</a>
+                           <div class="dropdown-menu pb-0">
+                              <div class="row p-2 p-lg-4">
+                                 <div class="col-lg-3 col-12 mb-4 mb-lg-0">
+                                    <h6 class="text-primary ps-3">Dairy, Bread & Eggs</h6>
+                                    <a class="dropdown-item" href="shop-grid.html">Butter</a>
+                                 </div> -->
+
+
+                     <!-- Offer Image Start -->
+                     <!-- <div class="col-lg-3 col-12 mb-4 mb-lg-0">
+                                    <div class="card border-0">
+                                       <img src="{% static 'assets/images/banner/menu-banner.jpg' %}" alt="eCommerce HTML Template" class="img-fluid" />
+                                       <div class="position-absolute ps-6 mt-8">
+                                          <h5 class="mb-0">
+                                             Dont miss this
+                                             <br />
+                                             offer today.
+                                          </h5>
+                                          <a href="#" class="btn btn-primary btn-sm mt-3">Shop Now</a>
+                                       </div>
+                                    </div>
+                                 </div> -->
+                     <!-- Offer Image End -->
+                     <!-- </div>
+                           </div>
+                        </li> -->
+                     <!-- <li class="nav-item">
+                        <a class="nav-link" href="{% url 'contact' %}">Contact Us</a>
+                     </li> -->
+                     {% if request.session.user_id %}
+                     <li class="nav-item">
+                        <a class="nav-link" href="{% url 'profile' %}">My Account</a>
+                     </li>
+                     {% endif %}
+                     {% if not request.session.user_id %}
+                     <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#userModal">
+                           Login / Register
+                        </a>
+                     </li>
+                     {% endif %}
+
+
+                  </ul>
+               </div>
+            </div>
+         </div>
+      </div>
+   </nav>
+
+   <!-- Modal -->
+   <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+         <div class="modal-content p-4">
+            <div class="modal-header border-0">
+               <h5 class="modal-title fs-3 fw-bold" id="userModalLabel">Login</h5>
+               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+               {% if messages %}
+               {% for message in messages %}
+               <div class="alert 
+      {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}
+      alert-dismissible fade show mt-2" role="alert">
+                  {{ message }}
+                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+               </div>
+               {% endfor %}
+               {% endif %}
+               <form id="modalLoginForm" novalidate>
+                  {% csrf_token %}
+                  <div class="mb-3">
+                     <label for="email" class="form-label">Email or Phone</label>
+                     <input type="text" class="form-control" id="email" name="formSigninEmail" required
+                        placeholder="Enter Email or Phone" />
+                  </div>
+                  <div class="mb-5">
+                     <label for="password" class="form-label">Password</label>
+                     <input type="password" class="form-control" id="password" name="formSigninPassword" required
+                        placeholder="Enter Password" />
+                  </div>
+                  <div id="modalMessageArea"></div>
+                  <button type="submit" id="modalLoginBtn" class="btn btn-primary w-100">
+                     <span class="btn-text">Login</span>
+                     <span class="spinner-border spinner-border-sm d-none ms-2" role="status" aria-hidden="true"></span>
+                  </button>
+
+               </form>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+               Don't have an account?
+               <a href="{% url 'signup' %}">Sign up</a>
+            </div>
+         </div>
+      </div>
+   </div>
+
+   <main>
+      <!-- section -->
+      <section>
+         <!-- container -->
+         <div class="container">
+            <!-- row -->
+            <div class="row">
+               <!-- col -->
+               <div class="col-12">
+                  <div class="d-flex justify-content-between align-items-center d-md-none py-4">
+                     <!-- heading -->
+                     <h3 class="fs-5 mb-0">Account Setting</h3>
+                     <!-- button -->
+                     <button class="btn btn-outline-gray-400 text-muted d-md-none btn-icon btn-sm ms-3" type="button"
+                        data-bs-toggle="offcanvas" data-bs-target="#offcanvasAccount" aria-controls="offcanvasAccount">
+                        <i class="bi bi-text-indent-left fs-3"></i>
+                     </button>
+                  </div>
+               </div>
+               <!-- col -->
+               <div class="col-lg-3 col-md-4 col-12 border-end d-none d-md-block">
+                  <div class="pt-10 pe-lg-10">
+                     <!-- nav item -->
+                     <ul class="nav flex-column nav-pills nav-pills-dark">
+                        <li class="nav-item">
+                           <a class="nav-link" aria-current="page" href="{% url 'profile' %}">
+                              <i class="feather-icon icon-user me-2"></i>
+                              My Profile
+                           </a>
+                        </li>
+                        <!-- nav item -->
+                        <li class="nav-item">
+                           <a class="nav-link" href="{% url 'order-details' %}">
+                              <i class="feather-icon icon-shopping-bag me-2"></i>
+                              Orders
+                           </a>
+                        </li>
+                        <!-- nav item -->
+                        <li class="nav-item">
+                           <a class="nav-link" href="{% url 'address' %}">
+                              <i class="feather-icon icon-map-pin me-2"></i>
+                              Address
+                           </a>
+                        </li>
+                        <li class="nav-item">
+                           <a class="nav-link" href="{% url 'wishlist' %}">
+                              <i class="bi bi-heart me-2"></i>
+                              Wishlist
+                           </a>
+                        </li>
+                        <!-- nav item -->
+                        <li class="nav-item">
+                           <a class="nav-link" href="{% url 'payment-method' %}">
+                              <i class="feather-icon icon-credit-card me-2"></i>
+                              Payment Method
+                           </a>
+                        </li>
+                        <!-- nav item -->
+                        <li class="nav-item">
+                           <a class="nav-link" href="{% url 'rewards' %}">
+                              <i class="feather-icon icon-bell me-2"></i>
+                              Rewards
+                           </a>
+                        </li>
+                        <!-- nav item -->
+                        <li class="nav-item">
+                           <hr />
+                        </li>
+                        <!-- nav item -->
+                        <li class="nav-item">
+                           <a class="nav-link" href="{% url 'userlogout' %}">
+                              <i class="feather-icon icon-log-out me-2"></i>
+                              Log out
+                           </a>
+                        </li>
+                     </ul>
+                  </div>
+               </div>
+
+               {% block content %}
+
+               {% endblock %}
+            </div>
+         </div>
+      </section>
+   </main>
+
+   <!-- modal -->
+   <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasAccount" aria-labelledby="offcanvasAccountLabel">
+      <!-- offcanvas header -->
+      <div class="offcanvas-header">
+         <h5 class="offcanvas-title" id="offcanvasAccountLabel">Offcanvas</h5>
+         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <!-- offcanvas body -->
+      <div class="offcanvas-body">
+         <ul class="nav flex-column nav-pills nav-pills-dark">
+            <!-- nav item -->
+            <li class="nav-item">
+               <a class="nav-link" aria-current="page" href="{% url 'profile' %}">
+                  <i class="feather-icon icon-user me-2"></i>
+                  My Profile
+               </a>
+            </li>
+            <!-- nav item -->
+
+            <li class="nav-item">
+               <a class="nav-link" href="{% url 'order-details' %}">
+                  <i class="feather-icon icon-shopping-bag me-2"></i>
+                  Orders
+               </a>
+            </li>
+            <!-- nav item -->
+
+            <li class="nav-item">
+               <a class="nav-link" href="{% url 'address' %}">
+                  <i class="feather-icon icon-map-pin me-2"></i>
+                  Address
+               </a>
+            </li>
+            <!-- nav item -->
+            <li class="nav-item">
+               <a class="nav-link" href="{% url 'wishlist' %}">
+                  <i class="bi bi-heart me-2"></i>
+                  Wishlist
+               </a>
+            </li>
+            <li class="nav-item">
+               <a class="nav-link" href="{% url 'payment-method' %}">
+                  <i class="feather-icon icon-credit-card me-2"></i>
+                  Payment Method
+               </a>
+            </li>
+            <!-- nav item -->
+
+            <li class="nav-item">
+               <a class="nav-link" href="{% url 'rewards' %}">
+                  <i class="feather-icon icon-bell me-2"></i>
+                  Rewards
+               </a>
+            </li>
+         </ul>
+         <hr class="my-6" />
+         <div>
+            <!-- navs -->
+            <ul class="nav flex-column nav-pills nav-pills-dark">
+               <!-- nav item -->
+               <li class="nav-item">
+                  <a class="nav-link" href="{% url 'userlogout' %}">
+                     <i class="feather-icon icon-log-out me-2"></i>
+                     Log out
+                  </a>
+               </li>
+            </ul>
+         </div>
+      </div>
+   </div>
+
+
+
+
+
+
+   <!-- footer -->
+   <footer class="footer">
+      <div class="container">
+         <div class="row g-4 py-4">
+            <div class="col-12 col-md-12 col-lg-4">
+
+
+            </div>
+            <div class="col-12 col-md-12 col-lg-8">
+               <div class="row g-4">
+                  <div class="col-6 col-sm-6 col-md-3">
+                     <h6 class="mb-4">Get to know us</h6>
+                     <!-- list -->
+                     <ul class="nav flex-column">
+
+                        <li class="nav-item mb-2"><a href="{% url 'about' %}" class="nav-link">About</a></li>
+                        <li class="nav-item mb-2"><a href="#1" class="nav-link">Blog</a></li>
+                        <li class="nav-item mb-2"><a href="#!" class="nav-link">Help Center</a></li>
+                        <li class="nav-item mb-2"><a href="#!" class="nav-link">Our Value</a></li>
+                     </ul>
+                  </div>
+                  <div class="col-6 col-sm-6 col-md-3">
+                     <h6 class="mb-4">For Consumers</h6>
+                     <ul class="nav flex-column">
+                        <!-- list -->
+                        <li class="nav-item mb-2"><a href="#!" class="nav-link">Payments</a></li>
+                        <li class="nav-item mb-2"><a href="#!" class="nav-link">Shipping</a></li>
+                        <li class="nav-item mb-2"><a href="#!" class="nav-link">Product Returns</a></li>
+                        <li class="nav-item mb-2"><a href="#!" class="nav-link">FAQ</a></li>
+                        <li class="nav-item mb-2"><a href="shop-checkout.html" class="nav-link">Shop Checkout</a></li>
+                     </ul>
+                  </div>
+                  <div class="col-6 col-sm-6 col-md-3">
+                     <h6 class="mb-4">Become a Shopper</h6>
+                     <ul class="nav flex-column">
+                        <!-- list -->
+                        <li class="nav-item mb-2"><a href="#!" class="nav-link">Shopper Opportunities</a></li>
+                        <li class="nav-item mb-2"><a href="#!" class="nav-link">Become a Shopper</a></li>
+                        <li class="nav-item mb-2"><a href="#!" class="nav-link">Earnings</a></li>
+                        <li class="nav-item mb-2"><a href="#!" class="nav-link">Ideas & Guides</a></li>
+                        <li class="nav-item mb-2"><a href="#!" class="nav-link">New Retailers</a></li>
+                     </ul>
+                  </div>
+                  <div class="col-6 col-sm-6 col-md-3">
+                     <h6 class="mb-4">Yellow Banyan programs</h6>
+                     <ul class="nav flex-column">
+                        <!-- list -->
+                        <li class="nav-item mb-2"><a href="#!" class="nav-link">Yellow Banyan programs</a></li>
+                        <li class="nav-item mb-2"><a href="#!" class="nav-link">Gift Cards</a></li>
+                        <li class="nav-item mb-2"><a href="#!" class="nav-link">Promos & Coupons</a></li>
+                        <li class="nav-item mb-2"><a href="#!" class="nav-link">Yellow Banyan Ads</a></li>
+                        <li class="nav-item mb-2"><a href="#!" class="nav-link">Careers</a></li>
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+         <div class="border-top py-4">
+            <div class="row align-items-center">
+               <div class="col-lg-5 text-lg-start text-center mb-2 mb-lg-0">
+                  <ul class="list-inline mb-0">
+                     <li class="list-inline-item text-dark">Payment Partners</li>
+                     <li class="list-inline-item">
+                        <a href="#!"><img src="{% static 'assets/images/payment/amazonpay.svg' %}" alt="" /></a>
+                     </li>
+                     <li class="list-inline-item">
+                        <a href="#!"><img src="{% static 'assets/images/payment/american-express.svg' %}" alt="" /></a>
+                     </li>
+                     <li class="list-inline-item">
+                        <a href="#!"><img src="{% static 'assets/images/payment/mastercard.svg' %}" alt="" /></a>
+                     </li>
+                     <li class="list-inline-item">
+                        <a href="#!"><img src="{% static 'assets/images/payment/paypal.svg' %}" alt="" /></a>
+                     </li>
+                     <li class="list-inline-item">
+                        <a href="#!"><img src="{% static 'assets/images/payment/visa.svg' %}" alt="" /></a>
+                     </li>
+                  </ul>
+               </div>
+               <div class="col-lg-7 mt-4 mt-md-0">
+                  <ul class="list-inline mb-0 text-lg-end text-center">
+                     <li class="list-inline-item mb-2 mb-md-0 text-dark">Get deliveries with Yellow Banyan</li>
+                     <li class="list-inline-item ms-4">
+                        <a href="#!"><img src="{% static 'assets/images/appbutton/appstore-btn.svg' %}" alt=""
+                              style="width: 140px" /></a>
+                     </li>
+                     <li class="list-inline-item">
+                        <a href="#!"><img src="{% static 'assets/images/appbutton/googleplay-btn.svg' %}" alt=""
+                              style="width: 140px" /></a>
+                     </li>
+                  </ul>
+               </div>
+            </div>
+         </div>
+         <div class="border-top py-4">
+            <div class="row align-items-center">
+               <div class="col-md-6">
+                  <span class="small text-muted">
+                     © 2022
+                     <span id="copyright">
+                        -
+                        <script>
+                           document.getElementById("copyright").appendChild(document.createTextNode(new Date().getFullYear()));
+                        </script>
+                     </span>
+                     All rights reserved. Powered by
+                     <a href="">Thrayam Tech Solution</a>
+                     .
+                  </span>
+               </div>
+               <div class="col-md-6">
+                  <ul class="list-inline text-md-end mb-0 small mt-3 mt-md-0">
+                     <li class="list-inline-item text-muted">Follow us on</li>
+                     <li class="list-inline-item me-1">
+                        <a href="#!" class="btn btn-xs btn-social btn-icon">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                              class="bi bi-facebook" viewBox="0 0 16 16">
+                              <path
+                                 d="M16 8.049c0-4.446-3.582-8.05-8-8.05C3.58 0-.002 3.603-.002 8.05c0 4.017 2.926 7.347 6.75 7.951v-5.625h-2.03V8.05H6.75V6.275c0-2.017 1.195-3.131 3.022-3.131.876 0 1.791.157 1.791.157v1.98h-1.009c-.993 0-1.303.621-1.303 1.258v1.51h2.218l-.354 2.326H9.25V16c3.824-.604 6.75-3.934 6.75-7.951z" />
+                           </svg>
+                        </a>
+                     </li>
+                     <li class="list-inline-item me-1">
+                        <a href="#!" class="btn btn-xs btn-social btn-icon">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                              class="bi bi-twitter" viewBox="0 0 16 16">
+                              <path
+                                 d="M5.026 15c6.038 0 9.341-5.003 9.341-9.334 0-.14 0-.282-.006-.422A6.685 6.685 0 0 0 16 3.542a6.658 6.658 0 0 1-1.889.518 3.301 3.301 0 0 0 1.447-1.817 6.533 6.533 0 0 1-2.087.793A3.286 3.286 0 0 0 7.875 6.03a9.325 9.325 0 0 1-6.767-3.429 3.289 3.289 0 0 0 1.018 4.382A3.323 3.323 0 0 1 .64 6.575v.045a3.288 3.288 0 0 0 2.632 3.218 3.203 3.203 0 0 1-.865.115 3.23 3.23 0 0 1-.614-.057 3.283 3.283 0 0 0 3.067 2.277A6.588 6.588 0 0 1 .78 13.58a6.32 6.32 0 0 1-.78-.045A9.344 9.344 0 0 0 5.026 15z" />
+                           </svg>
+                        </a>
+                     </li>
+                     <li class="list-inline-item">
+                        <a href="#!" class="btn btn-xs btn-social btn-icon">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                              class="bi bi-instagram" viewBox="0 0 16 16">
+                              <path
+                                 d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.917 3.917 0 0 0-1.417.923A3.927 3.927 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.7.01 5.555 0 5.827 0 8.001c0 2.172.01 2.444.048 3.297.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.555 15.99 5.827 16 8 16s2.444-.01 3.298-.048c.851-.04 1.434-.174 1.943-.372a3.916 3.916 0 0 0 1.416-.923c.445-.445.718-.891.923-1.417.197-.509.332-1.09.372-1.942C15.99 10.445 16 10.173 16 8s-.01-2.445-.048-3.299c-.04-.851-.175-1.433-.372-1.941a3.926 3.926 0 0 0-.923-1.417A3.911 3.911 0 0 0 13.24.42c-.51-.198-1.092-.333-1.943-.372C10.443.01 10.172 0 7.998 0h.003zm-.717 1.442h.718c2.136 0 2.389.007 3.232.046.78.035 1.204.166 1.486.275.373.145.64.319.92.599.28.28.453.546.598.92.11.281.24.705.275 1.485.039.843.047 1.096.047 3.231s-.008 2.389-.047 3.232c-.035.78-.166 1.203-.275 1.485a2.47 2.47 0 0 1-.599.919c-.28.28-.546.453-.92.598-.28.11-.704.24-1.485.276-.843.038-1.096.047-3.232.047s-2.39-.009-3.233-.047c-.78-.036-1.203-.166-1.485-.276a2.478 2.478 0 0 1-.92-.598 2.48 2.48 0 0 1-.6-.92c-.109-.281-.24-.705-.275-1.485-.038-.843-.046-1.096-.046-3.233 0-2.136.008-2.388.046-3.231.036-.78.166-1.204.276-1.486.145-.373.319-.64.599-.92.28-.28.546-.453.92-.598.282-.11.705-.24 1.485-.276.738-.034 1.024-.044 2.515-.045v.002zm4.988 1.328a.96.96 0 1 0 0 1.92.96.96 0 0 0 0-1.92zm-4.27 1.122a4.109 4.109 0 1 0 0 8.217 4.109 4.109 0 0 0 0-8.217zm0 1.441a2.667 2.667 0 1 1 0 5.334 2.667 2.667 0 0 1 0-5.334z" />
+                           </svg>
+                        </a>
+                     </li>
+                  </ul>
+               </div>
+            </div>
+         </div>
+      </div>
+   </footer>
+   <!-- Javascript-->
+   <!-- Libs JS -->
+   <!-- <script src="../assets/libs/jquery/dist/jquery.min.js"></script> -->
+   <script src="{% static 'assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js' %}"></script>
+   <script src="{% static 'assets/libs/simplebar/dist/simplebar.min.js' %}"></script>
+
+   <!-- Theme JS -->
+   <script src="{% static 'assets/js/theme.min.js' %}"></script>
+
+   <script src="{% static 'assets/js/vendors/jquery.min.js' %}"></script>
+   <script src="{% static 'assets/libs/slick-carousel/slick/slick.min.js' %}"></script>
+   <script src="{% static 'assets/js/vendors/slick-slider.js' %}"></script>
+   <script src="{% static 'assets/libs/tiny-slider/dist/min/tiny-slider.js' %}"></script>
+   <script src="{% static 'assets/js/vendors/tns-slider.js' %}"></script>
+   <script src="{% static 'assets/js/vendors/zoom.js' %}"></script>
+
+
+   <script>
+      // Auto-hide alerts after 4 seconds
+      setTimeout(() => {
+         document.querySelectorAll('.alert').forEach(el => {
+            let fade = new bootstrap.Alert(el);
+            fade.close();
+         });
+      }, 4000);
+
+      // Auto-close login modal after success message
+      document.addEventListener('DOMContentLoaded', () => {
+         const successAlert = document.querySelector('.alert-success');
+         if (successAlert) {
+            const modalEl = document.getElementById('userModal');
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            if (modalInstance) {
+               setTimeout(() => modalInstance.hide(), 1500);
+            }
+         }
+      });
+   </script>
+
+   <script>
+      document.addEventListener("DOMContentLoaded", function () {
+         const loginForm = document.getElementById("modalLoginForm");
+         const messageArea = document.getElementById("modalMessageArea");
+         const loginBtn = document.getElementById("modalLoginBtn");
+
+         if (loginForm) {
+            loginForm.addEventListener("submit", async function (e) {
+               e.preventDefault();
+               messageArea.innerHTML = "";
+
+               const formData = new FormData(loginForm);
+               const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+               const btnText = loginBtn.querySelector(".btn-text");
+               const spinner = loginBtn.querySelector(".spinner-border");
+
+               // Show loading state
+               loginBtn.disabled = true;
+               btnText.textContent = "Logging in...";
+               spinner.classList.remove("d-none");
+
+               try {
+                  const response = await fetch("{% url 'userlogin' %}", {
+                     method: "POST",
+                     headers: {
+                        "X-CSRFToken": csrfToken,
+                        "X-Requested-With": "XMLHttpRequest"
+                     },
+                     body: formData
+                  });
+
+                  let data;
+                  try {
+                     data = await response.json();
+                  } catch {
+                     throw new Error("Invalid server response");
+                  }
+
+                  // Reset button state
+                  loginBtn.disabled = false;
+                  btnText.textContent = "Login";
+                  spinner.classList.add("d-none");
+
+                  if (data.status === "success") {
+                     messageArea.innerHTML = `
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+              ${data.message}
+            </div>
+          `;
+
+                     // Close modal and reload after short delay
+                     setTimeout(() => {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById("userModal"));
+                        if (modal) modal.hide();
+                        location.reload();
+                     }, 1500);
+
+                  } else {
+                     messageArea.innerHTML = `
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+              ${data.message}
+            </div>
+          `;
+                  }
+               } catch (error) {
+                  messageArea.innerHTML = `
+          <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            Something went wrong. Please try again.
+          </div>
+        `;
+
+                  // Reset button state
+                  loginBtn.disabled = false;
+                  btnText.textContent = "Login";
+                  spinner.classList.add("d-none");
+               }
+            });
+         }
+      });
+   </script>
+
+</body>
+
+
+
+</html>

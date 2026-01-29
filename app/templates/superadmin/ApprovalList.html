@@ -1,0 +1,66 @@
+{% extends "superadmin/adminbase.html" %}
+{% load static %}
+{% block title %}Approval List - Superadmin{% endblock %}
+{% block content %}
+
+<main class="main-content-wrapper">
+    <div class="container">
+        <div class="row mb-8">
+            <div class="col-md-12">
+                <div class="d-md-flex justify-content-between align-items-center">
+                    <div>
+                        <h2>Approval List</h2>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb mb-0">
+                                <li class="breadcrumb-item"><a href="{% url 'admin-home' %}" class="text-inherit">Dashboard</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">Approval List</li>
+                            </ol>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if admins_with_products %}
+        <div class="row">
+            {% for admin in admins_with_products %}
+            <div class="col-md-4 col-lg-3 col-sm-6 mb-4">
+                <div class="card flex-row p-4 card-product h-100 shadow-sm border-0">
+                    <div>
+                        {% if admin.photo %}
+                        <img src="/media/{{ admin.photo }}" alt="{{ admin.username }}" class="rounded-circle icon-shape icon-xl">
+                        {% else %}
+                        <img src="{% static 'assets/images/docs/placeholder-img.jpg' %}" alt="No Image" class="rounded-circle icon-shape icon-xl">
+                        {% endif %}
+                    </div>
+                    <div class="ms-4 flex-grow-1 d-flex flex-column justify-content-between">
+                        <div>
+                            <h5 class="mb-1"><a href="#!" class="text-inherit">{{ admin.username|default:"Unknown Admin" }}</a></h5>
+                            <div class="small text-muted">
+                                <span>{{ admin.organization|default:"No Organization" }}</span> •
+                                <span>{{ admin.email }}</span>
+                            </div>
+                        </div>
+                        <div class="py-2">
+                            <ul class="list-unstyled mb-0 small">
+                                <li>Total Products: <strong>{{ admin.total_products }}</strong></li>
+                                <li>Phone: {{ admin.phone|default:"No Phone" }}</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <a href="{% url 'approval-list-products' admin.admin_id %}" class="btn btn-outline-info btn-sm w-100">
+                                View All Products
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info">No admins with products found.</div>
+        {% endif %}
+    </div>
+</main>
+
+{% endblock %}

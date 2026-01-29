@@ -1,0 +1,238 @@
+{% extends 'superadmin/adminbase.html' %}
+{% load static %}
+{% block title %}Edit Carousel{% endblock %}
+
+{% block content %}
+<main class="main-content-wrapper">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2>Edit Carousel</h2>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{% url 'admin-home' %}" class="text-inherit">Dashboard</a>
+                        </li>
+                        <li class="breadcrumb-item"><a href="{% url 'carousel-images' %}" class="text-inherit">Carousel
+                                Images</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Edit Carousel</li>
+                    </ol>
+                </nav>
+            </div>
+            <div>
+                <a href="{% url 'carousel-images' %}" class="btn btn-light">Back to List</a>
+            </div>
+        </div>
+
+        <div class="card shadow border-0">
+            <form action="" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="card-body p-6">
+                    <h4 class="mb-4 h5">Carousel Image</h4>
+
+                    <div class="mb-4 d-flex align-items-start gap-4">
+
+                        <!-- LEFT: Image Preview & Upload -->
+                        <div class="position-relative rounded-4 overflow-hidden border shadow-sm"
+     style="width:480px; height:200px; max-width:100%;">
+
+
+   <!-- Image (scaled 1920×800) -->
+   <img id="previewImage"
+        src="{% if carousel %}/media/{{ carousel.image }}{% else %}{% static 'assets/images/icons/placeholder-img.jpg' %}{% endif %}"
+        class="w-100 h-100"
+        style="object-fit:cover;"
+        alt="Carousel Preview">
+
+   <!-- Text preview (LEFT aligned like website) -->
+   <div class="position-absolute top-50 start-0 translate-middle-y ps-4 pe-3"
+        style="width:45%;">
+      <h3 id="previewTitle"
+          class="fw-bold mb-2"
+          style="color: {{ carousel.title_color|default:'#ffffff' }};">
+         Carousel Title
+      </h3>
+      <p id="previewDescription"
+         class="mb-0"
+         style="color: {{ carousel.description_color|default:'#dddddd' }};">
+         Carousel description goes here
+      </p>
+   </div>
+
+   <!-- Contrast warning -->
+   <span id="contrastWarning"
+         class="badge bg-warning text-dark position-absolute bottom-0 start-50 translate-middle-x mb-2 d-none">
+      Low contrast on left text area
+   </span>
+
+   <!-- Upload icon -->
+   <div class="file-upload position-absolute end-0 top-0 mt-2 me-2">
+      <input type="file"
+             name="image"
+             class="file-input"
+             accept="image/jpeg,image/jpg,image/webp"
+             onchange="previewFile(event)">
+      <span class="icon-shape icon-sm rounded-circle bg-white shadow">
+         <i class="bi bi-pencil-fill text-muted"></i>
+      </span>
+   </div>
+
+</div>
+
+
+                        <!-- RIGHT: Always-visible requirements -->
+                        <div class="flex-grow-1">
+                            <div class="alert alert-info py-2 mb-0">
+                                <strong>Carousel image requirements:</strong><br>
+                                • Resolution: <b>1920 × 800 px</b><br>
+                                • Format: <b>JPG / JPEG / WebP</b><br>
+                                • Max size: <b>300 KB</b>
+                            </div>
+                        </div>
+
+                    </div>
+
+
+                    <h4 class="mb-4 h5">Carousel Information</h4>
+                    <div class="row g-4">
+
+                        <!-- Carousel Name + Title Color -->
+                        <div class="col-lg-12">
+                            <label class="form-label">Carousel Name</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <input type="text" name="carousel_name" id="carouselTitleInput" class="form-control"
+                                    value="{{ carousel.title }}" placeholder="Carousel Name" required />
+
+                                <!-- Title Color -->
+                                <div class="d-flex align-items-center border rounded px-2 py-1">
+                                    <input type="color" name="title_color" id="titleColorInput"
+                                        value="{{ carousel.title_color|default:'#000000' }}" class="border-0 p-0"
+                                        style="width:32px; height:32px; background:none;">
+                                    <span class="ms-2 small text-muted">
+                                        {{ carousel.title_color|default:'#000000' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Shop Page URL -->
+                        <div class="col-lg-6">
+                            <label class="form-label">Shop Page URL</label>
+                            <input type="text" class="form-control" value="{{ carousel.page_link }}" name="page_link" />
+                        </div>
+
+                        <!-- Offer Text -->
+                        <div class="col-lg-6">
+                            <label class="form-label">Offer Text</label>
+                            <input type="text" class="form-control" value="{{ carousel.offer_text }}"
+                                name="offer_text" />
+                        </div>
+
+                        <!-- Description + Text Color -->
+                        <div class="col-lg-12">
+                            <label class="form-label">Description</label>
+                            <div class="d-flex align-items-start gap-3">
+                                <textarea name="description" id="carouselDescInput" class="form-control" rows="5"
+                                    required>{{ carousel.description }}</textarea>
+
+                                <!-- Description Color -->
+                                <div class="d-flex flex-column align-items-start gap-1">
+                                    <span class="small text-muted">Text color</span>
+                                    <div class="d-flex align-items-center border rounded px-2 py-1">
+                                        <input type="color" name="description_color" id="descColorInput"
+                                            value="{{ carousel.description_color|default:'#333333' }}"
+                                            class="border-0 p-0" style="width:32px; height:32px; background:none;">
+                                        <span class="ms-2 small text-muted">
+                                            {{ carousel.description_color|default:'#333333' }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="col-lg-12">
+                            <input type="submit" class="btn btn-primary" value="Update Carousel">
+                            <a href="{% url 'carousel-images' %}" class="btn btn-secondary ms-2">Cancel</a>
+                        </div>
+
+                    </div>
+                    ``
+
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+
+<script>
+    document.querySelectorAll('input[type="color"]').forEach(input => {
+        input.addEventListener('input', function () {
+            this.nextElementSibling.textContent = this.value;
+        });
+    });
+</script>
+
+<script>
+const titleInput = document.getElementById('carouselTitleInput');
+const descInput = document.getElementById('carouselDescInput');
+const titleColorInput = document.getElementById('titleColorInput');
+const descColorInput = document.getElementById('descColorInput');
+
+const previewTitle = document.getElementById('previewTitle');
+const previewDesc = document.getElementById('previewDescription');
+const previewImage = document.getElementById('previewImage');
+const contrastWarning = document.getElementById('contrastWarning');
+
+// Live text update
+function updatePreview() {
+   previewTitle.textContent = titleInput.value || 'Carousel Title';
+   previewDesc.textContent = descInput.value || 'Carousel description';
+
+   previewTitle.style.color = titleColorInput.value;
+   previewDesc.style.color = descColorInput.value;
+
+   checkContrast();
+}
+
+// Convert hex to RGB
+function hexToRgb(hex) {
+   const bigint = parseInt(hex.replace('#',''), 16);
+   return {
+      r: (bigint >> 16) & 255,
+      g: (bigint >> 8) & 255,
+      b: bigint & 255
+   };
+}
+
+// Calculate luminance
+function luminance(r, g, b) {
+   return (0.299*r + 0.587*g + 0.114*b) / 255;
+}
+
+// Contrast check (simple & fast)
+function checkContrast() {
+   const imgBg = getComputedStyle(previewImage).backgroundColor || '#ffffff';
+   const textColor = hexToRgb(titleColorInput.value);
+
+   const textLum = luminance(textColor.r, textColor.g, textColor.b);
+
+   if (textLum > 0.7) {
+      contrastWarning.classList.remove('d-none');
+   } else {
+      contrastWarning.classList.add('d-none');
+   }
+}
+
+// Event bindings
+[titleInput, descInput, titleColorInput, descColorInput].forEach(el => {
+   el.addEventListener('input', updatePreview);
+});
+
+// Initial call (important for Edit page)
+updatePreview();
+</script>
+
+
+
+
+{% endblock %}

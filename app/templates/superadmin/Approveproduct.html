@@ -1,0 +1,93 @@
+{% extends "superadmin/adminbase.html" %}
+{% load static %}
+{% block title %}Products - Superadmin{% endblock %}
+{% block content %}
+
+<main class="main-content-wrapper">
+    <div class="container">
+        <div class="row mb-8">
+            <div class="col-md-12">
+                <!-- page header -->
+                <div class="d-md-flex justify-content-between align-items-center">
+                    <div>
+                        <h2>Approve Products</h2>
+                        <!-- breadcrumb -->
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb mb-0">
+                                <li class="breadcrumb-item"><a href="{% url 'admin-home' %}"
+                                        class="text-inherit">Dashboard</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">Approve Products</li>
+                            </ol>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- cards for each admin -->
+        {% if pending_admins %}
+        <div class="row">
+            {% for admin in pending_admins %}
+            <div class="col-xl-4 col-lg-4 col-md-6 mb-4">
+                <div class="card flex-row p-4 card-product h-100 shadow-sm border-0">
+                    <div>
+                        <!-- img -->
+                        {% if admin.photo %}
+                        <img src="/media/{{ admin.photo }}" alt="{{ admin.username }}"
+                            class="rounded-circle icon-shape icon-xl">
+                        {% else %}
+                        <img src="{% static 'assets/images/docs/placeholder-img.jpg' %}" alt="No Image"
+                            class="rounded-circle icon-shape icon-xl">
+                        {% endif %}
+                    </div>
+
+                    <!-- content -->
+                    <div class="ms-4 flex-grow-1 d-flex flex-column justify-content-between">
+                        <div>
+                            <h5 class="mb-1">
+                                <a href="#!" class="text-inherit">{{ admin.username|default:"Unknown Admin" }}</a>
+                            </h5>
+                            <div class="small text-muted">
+                                <span>{{ admin.organization|default:"No Organization" }}</span>
+                                <span class="mx-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="4" height="4" fill="#C1C7C6"
+                                        class="bi bi-circle-fill align-middle" viewBox="0 0 16 16">
+                                        <circle cx="8" cy="8" r="8" />
+                                    </svg>
+                                </span>
+                                <span>{{ admin.email }}</span>
+                            </div>
+                        </div>
+
+                        <div class="py-3">
+                            <ul class="list-unstyled mb-0 small">
+                                <li>Total Pending Products: <strong>{{ admin.pending_count }}</strong></li>
+                                <li>Phone: {{ admin.phone|default:"No Phone" }}</li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <div class="badge text-bg-light border me-2">Pending Products</div>
+                            <div class="badge text-bg-light border">Awaiting Approval</div>
+                            <div class="mt-3">
+                                <a href="{% url 'approve-product-list' admin.admin_id %}"
+                                    class="btn btn-danger btn-sm w-100">
+                                    View Products
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            No pending products found from any admin.
+        </div>
+        {% endif %}
+
+    </div>
+</main>
+
+{% endblock %}

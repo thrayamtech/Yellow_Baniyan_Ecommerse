@@ -1,0 +1,44 @@
+{% extends "superadmin/adminbase.html" %}
+{% block title %} Monitior Orders - Superadmin {% endblock %}
+{% block content %}
+<main class="main-content-wrapper">
+<div class="container mt-4">
+    <h2 class="mb-3">Superadmin Order Monitor</h2>
+
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Order ID</th>
+                <th>Product</th>
+                <th>Customer</th>
+                <th>Admin</th>
+                <th>Status</th>
+                <th>Admin Opened</th>
+                <th>Order Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for o in orders %}
+            <tr>
+                <td>#{{ o.order_id }}</td>
+                <td>{{ o.product_title }}</td>
+                <td>{{ o.first_name }} {{ o.last_name }}</td>
+                <td>{{ o.admin_name }}</td>
+                <td>
+                    <span class="badge bg-primary">{{ o.status|default:"Order Placed" }}</span>
+                </td>
+                <td>
+                    {% if o.opened_at %}
+                        <span class="text-success">{{ o.opened_at }}</span>
+                    {% else %}
+                        <span class="text-danger">Not opened</span>
+                    {% endif %}
+                </td>
+                <td>{{ o.created_at|date:"d M Y h:i A" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</main>
+{% endblock %}

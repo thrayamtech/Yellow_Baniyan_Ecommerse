@@ -1,0 +1,281 @@
+{% extends 'superadmin/adminbase.html' %}
+{% load static %}
+{% block title %} Add Carousel {% endblock %}
+{% block content %}
+
+<main class="main-content-wrapper">
+   <div class="container">
+      <div class="row mb-8">
+         <div class="col-md-12">
+            <div class="d-md-flex justify-content-between align-items-center">
+               <div>
+                  <h2>Add New Carousel</h2>
+                  <nav aria-label="breadcrumb">
+                     <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{% url 'admin-home' %}" class="text-inherit">Dashboard</a>
+                        </li>
+                        <li class="breadcrumb-item"><a href="{% url 'carousel-images' %}" class="text-inherit">Carousel
+                              Image</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Add New Carousel</li>
+                     </ol>
+                  </nav>
+               </div>
+               <div>
+                  <a href="{% url 'carousel-images' %}" class="btn btn-light">Back to Carousel</a>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      <div class="row">
+         <div class="col-lg-12 col-12">
+            <div class="card mb-6 shadow border-0">
+               <form action="" method="post" enctype="multipart/form-data">
+                  {% csrf_token %}
+                  <div class="card-body p-6">
+                     <h4 class="mb-5 h5">Carousel Image</h4>
+
+                     <div class="mb-4">
+                        <div class="d-flex align-items-start gap-4">
+
+                           <!-- LEFT: Image Upload -->
+                           <div class="position-relative">
+
+                              <div class="position-relative" style="width:480px; height:200px; cursor:pointer;">
+
+                                 <!-- FULL CLICKABLE FILE INPUT (covers entire box) -->
+                                 <input type="file" name="image"
+                                    class="position-absolute top-0 start-0 w-100 h-100 opacity-0"
+                                    style="z-index:10; cursor:pointer;" accept="image/jpeg,image/jpg,image/webp"
+                                    onchange="previewFile(event)" required />
+
+                                 <!-- IMAGE PREVIEW (480 × 200) -->
+                                 <div class="position-relative rounded-4 overflow-hidden border shadow-sm w-100 h-100">
+
+                                    <img id="previewImage" src="{% static 'assets/images/icons/placeholder-img.jpg' %}"
+                                       class="w-100 h-100" style="object-fit:cover;" alt="Image Preview" />
+
+                                    <!-- Live text overlay (LEFT aligned) -->
+                                    <div class="position-absolute top-50 start-0 translate-middle-y ps-3 pe-2"
+                                       style="width:45%;">
+                                       <h6 id="previewTitle" class="fw-bold mb-1" style="color:#ffffff;">
+                                          Carousel Title
+                                       </h6>
+                                       <small id="previewDescription" style="color:#dddddd;">
+                                          Carousel description
+                                       </small>
+                                    </div>
+
+                                    <!-- Contrast warning -->
+                                    <span id="contrastWarning"
+                                       class="badge bg-warning text-dark position-absolute bottom-0 start-50 translate-middle-x mb-1 d-none">
+                                       Low contrast on left text area
+                                    </span>
+                                 </div>
+
+                                 <!-- PEN ICON (VISUAL ONLY) -->
+                                 <span class="icon-shape icon-sm rounded-circle bg-white shadow
+                position-absolute top-0 end-0 mt-2 me-2" style="z-index:20; pointer-events:none;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor"
+                                       class="bi bi-pencil-fill text-muted" viewBox="0 0 16 16">
+                                       <path
+                                          d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5 0 0 1 .5.5v.5h.5a.5 0 0 1 .5.5v.5h.5a.5 0 0 1 .5.5v.207l6.5-6.5z" />
+                                    </svg>
+                                 </span>
+
+                              </div>
+
+                              <!-- FILE UPLOAD ICON -->
+                              <div class="file-upload position-absolute end-0 top-0 mt-2 me-2">
+                                 <span class="icon-shape icon-sm rounded-circle bg-white shadow">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor"
+                                       class="bi bi-pencil-fill text-muted" viewBox="0 0 16 16">
+                                       <path
+                                          d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5 0 0 1 .5.5v.5h.5a.5 0 0 1 .5.5v.5h.5a.5 0 0 1 .5.5v.207l6.5-6.5z" />
+                                    </svg>
+                                 </span>
+                              </div>
+
+                           </div>
+
+
+
+                           <!-- RIGHT: Always-visible message -->
+                           <div class="flex-grow-1">
+                              <div class="alert alert-info py-2 mb-0">
+                                 <strong>Carousel image requirements:</strong><br>
+                                 • Resolution: <b>1920 × 800 px</b><br>
+                                 • Format: <b>JPG / JPEG / WebP</b><br>
+                                 • Max size: <b>300 KB</b>
+                              </div>
+                           </div>
+
+                        </div>
+                     </div>
+
+
+                     <h4 class="mb-4 h5 mt-5">Carousel Information</h4>
+
+                     <div class="row g-4">
+
+                        <!-- Carousel Name + Title Color -->
+                        <div class="col-lg-12">
+                           <label class="form-label">Carousel Name</label>
+                           <div class="d-flex align-items-center gap-3">
+                              <input type="text" class="form-control" name="carousel_name" id="carouselTitleInput"
+                                 placeholder="Carousel Name" required>
+
+                              <div class="d-flex align-items-center gap-3">
+
+                                 <span class="small text-muted">Title color</span>
+
+                                 <div class="d-flex align-items-center border rounded px-2 py-1">
+                                    <input type="color" name="title_color" id="titleColorInput" value="#000000"
+                                       class="border-0 p-0" style="width:32px; height:32px; background:none;">
+
+                                    <span class="ms-2 small text-muted">#000000</span>
+                                 </div>
+
+                              </div>
+
+                           </div>
+                        </div>
+
+                        <!-- Shop Page URL -->
+                        <div class="col-lg-6">
+                           <label class="form-label">Shop Page URL</label>
+                           <input type="text" class="form-control" placeholder="https://example.com/shop"
+                              name="page_link">
+                        </div>
+
+                        <!-- Offer Text -->
+                        <div class="col-lg-6">
+                           <label class="form-label">Offer Text</label>
+                           <input type="text" class="form-control" placeholder="e.g. Up to 50% Off" name="offer_text">
+                        </div>
+
+                        <!-- Description + Color -->
+                        <div class="col-lg-12">
+                           <label class="form-label">Description</label>
+                           <div class="d-flex align-items-start gap-3">
+                              <textarea name="description" id="carouselDescInput" class="form-control" rows="4"
+                                 placeholder="Enter carousel description..." required></textarea>
+
+                              <div class="d-flex align-items-center gap-3">
+
+                                 <span class="small text-muted">Text color</span>
+
+                                 <div class="d-flex align-items-center border rounded px-2 py-1">
+                                    <input type="color" name="description_color" id="descColorInput" value="#333333"
+                                       class="border-0 p-0" style="width:32px; height:32px; background:none;">
+
+                                    <span class="ms-2 small text-muted">#333333</span>
+                                 </div>
+
+                              </div>
+
+                           </div>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="col-lg-12">
+                           <button type="submit" class="btn btn-primary">Create Carousel</button>
+                           <button type="reset" class="btn btn-secondary ms-2">Reset</button>
+                        </div>
+
+                     </div>
+
+                  </div>
+               </form>
+            </div>
+         </div>
+      </div>
+   </div>
+</main>
+
+
+<script>
+   document.querySelectorAll('input[type="color"]').forEach(input => {
+      input.addEventListener('input', function () {
+         this.nextElementSibling.textContent = this.value;
+      });
+   });
+</script>
+
+<script>
+   const titleInput = document.getElementById('carouselTitleInput');
+   const descInput = document.getElementById('carouselDescInput');
+   const titleColorInput = document.getElementById('titleColorInput');
+   const descColorInput = document.getElementById('descColorInput');
+
+   const previewTitle = document.getElementById('previewTitle');
+   const previewDesc = document.getElementById('previewDescription');
+   const previewImage = document.getElementById('previewImage');
+   const contrastWarning = document.getElementById('contrastWarning');
+
+   // Live text update
+   function updatePreview() {
+      previewTitle.textContent = titleInput.value || 'Carousel Title';
+      previewDesc.textContent = descInput.value || 'Carousel description';
+
+      previewTitle.style.color = titleColorInput.value;
+      previewDesc.style.color = descColorInput.value;
+
+      checkContrast();
+   }
+
+   // Convert hex to RGB
+   function hexToRgb(hex) {
+      const bigint = parseInt(hex.replace('#', ''), 16);
+      return {
+         r: (bigint >> 16) & 255,
+         g: (bigint >> 8) & 255,
+         b: bigint & 255
+      };
+   }
+
+   // Calculate luminance
+   function luminance(r, g, b) {
+      return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+   }
+
+   // Contrast check (simple & fast)
+   function checkContrast() {
+      const imgBg = getComputedStyle(previewImage).backgroundColor || '#ffffff';
+      const textColor = hexToRgb(titleColorInput.value);
+
+      const textLum = luminance(textColor.r, textColor.g, textColor.b);
+
+      if (textLum > 0.7) {
+         contrastWarning.classList.remove('d-none');
+      } else {
+         contrastWarning.classList.add('d-none');
+      }
+   }
+
+   // Event bindings
+   [titleInput, descInput, titleColorInput, descColorInput].forEach(el => {
+      el.addEventListener('input', updatePreview);
+   });
+
+   // Initial call (important for Edit page)
+   updatePreview();
+</script>
+
+
+<script>
+   function previewFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const previewImage = document.getElementById('previewImage');
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+         previewImage.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+   }
+</script>
+
+{% endblock %}

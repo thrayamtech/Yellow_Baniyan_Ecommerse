@@ -1,0 +1,469 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_tags %}
+{% block title %} Shop Grid {% endblock %}
+{% block content %}
+
+<main>
+   <div class="mt-8 mb-lg-14 mb-8">
+      <div class="container">
+         <div class="row gx-10">
+            <!-- Sidebar -->
+            <aside class="col-lg-3 col-md-4 mb-6 mb-md-0">
+               <div class="offcanvas offcanvas-start offcanvas-collapse w-md-50" tabindex="-1" id="offcanvasCategory"
+                  aria-labelledby="offcanvasCategoryLabel">
+                  <div class="offcanvas-header d-lg-none">
+                     <h5 class="offcanvas-title" id="offcanvasCategoryLabel">Filter</h5>
+                     <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                  </div>
+                  <div class="offcanvas-body ps-lg-2 pt-lg-0">
+                     <!-- Category filter -->
+                     <div class="mb-8">
+                        <h5 class="mb-3">Categories</h5>
+                        <ul class="nav nav-category" id="categoryCollapseMenu">
+                           <li class="nav-item border-bottom w-100">
+                              <a href="#" class="nav-link collapsed" data-bs-toggle="collapse"
+                                 data-bs-target="#categoryFlushOne" aria-expanded="true"
+                                 aria-controls="categoryFlushOne">
+                                 {{ category.name }}
+                                 <i class="feather-icon icon-chevron-right"></i>
+                              </a>
+                              <div id="categoryFlushOne" class="accordion-collapse collapse show"
+                                 data-bs-parent="#categoryCollapseMenu">
+                                 <div>
+                                    <ul class="nav flex-column ms-3">
+                                       {% for sub in subcategories %}
+                                       <li class="nav-item">
+                                          <a href="{% url 'category-products' category.id %}?sub={{ sub.id }}"
+                                             class="nav-link {% if request.GET.sub|default:'' == sub.id|stringformat:'s' %}text-primary fw-bold{% endif %}">
+                                             {{ sub.name }}
+                                          </a>
+                                       </li>
+                                       {% empty %}
+                                       <li class="nav-item">
+                                          <span class="nav-link text-muted small">No subcategories</span>
+                                       </li>
+                                       {% endfor %}
+                                    </ul>
+                                 </div>
+                              </div>
+                           </li>
+                        </ul>
+                     </div>
+
+                     <!-- Filters placeholder -->
+                     <div class="mb-8">
+                        <h5 class="mb-3">Filters</h5>
+                        <p class="text-muted small mb-0">Coming soon...</p>
+                     </div>
+                  </div>
+               </div>
+            </aside>
+
+            <!-- Product Grid -->
+            <section class="col-lg-9 col-md-12">
+               <!-- Category Header -->
+               <div class="card mb-4 bg-light border-0">
+                  <div class="card-body p-9">
+                     <h2 class="mb-0 fs-1">{{ category.name }}</h2>
+                  </div>
+               </div>
+
+               <!-- Toolbar -->
+               <div class="d-lg-flex justify-content-between align-items-center">
+                  <div class="mb-3 mb-lg-0">
+                     <p class="mb-0">
+                        <span class="text-dark">{{ total }}</span>
+                        Products found
+                     </p>
+                  </div>
+
+                  <div class="d-md-flex justify-content-between align-items-center">
+                     <div class="d-flex align-items-center justify-content-between">
+                        <div class="ms-2 d-lg-none">
+                           <a class="btn btn-outline-gray-400 text-muted" data-bs-toggle="offcanvas"
+                              href="#offcanvasCategory" role="button" aria-controls="offcanvasCategory">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round" class="feather feather-filter me-2">
+                                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                              </svg>
+                              Filters
+                           </a>
+                        </div>
+                     </div>
+
+                     <div class="d-flex mt-2 mt-lg-0">
+                        <!-- Show limit -->
+                        <div class="me-2 flex-grow-1">
+                           <select class="form-select" onchange="location = this.value;">
+                              <option value="?limit=12" {% if limit == 12 %}selected{% endif %}>Show: 12</option>
+                              <option value="?limit=24" {% if limit == 24 %}selected{% endif %}>Show: 24</option>
+                              <option value="?limit=48" {% if limit == 48 %}selected{% endif %}>Show: 48</option>
+                           </select>
+                        </div>
+
+                        <!-- Sort -->
+                        <div>
+                           <select class="form-select" onchange="location = this.value;">
+                              <option value="?sort=" {% if not sort %}selected{% endif %}>Sort by: Featured</option>
+                              <option value="?sort=price_low" {% if sort == 'price_low' %}selected{% endif %}>Price: Low
+                                 to High</option>
+                              <option value="?sort=price_high" {% if sort == 'price_high' %}selected{% endif %}>Price:
+                                 High to Low</option>
+                           </select>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               <!-- Products -->
+               <div class="row g-4 row-cols-xl-4 row-cols-lg-3 row-cols-md-3 row-cols-2 mt-2 align-items-stretch">
+                  {% for product in products %}
+                  <div class="col">
+                     <div class="card card-product">
+                        <div class="card-body">
+                           <div class="text-center position-relative">
+                              {% comment %}✅ SALE, LOW STOCK, COMING SOON BADGES{% endcomment %}
+                              <div class="position-absolute top-0 start-0">
+                                 {% if product.stock <= 0 %} <span class="badge bg-secondary">Coming Soon</span>
+                                    {% elif product.stock < 10 %} <span class="badge bg-warning text-dark">Only {{ product.stock }} Left</span>
+                                       {% elif product.sale_price and product.sale_price|floatformat:2 < product.price|floatformat:2 %} <span class="badge bg-danger">Sale</span>
+                                          {% endif %}
+                              </div>
+
+                              <a href="{% url 'view-product' product.id %}">
+                                 <img src="/media/{{ product.main_image }}" alt="{{ product.title }}"
+                                    class="mb-3 img-fluid text-dark" />
+                              </a>
+                              <div class="card-product-action">
+                                 <a href="javascript:void(0);" class="btn-action"
+                                    onclick="addToWishlist({{ product.id }})" title="Add to Wishlist">
+                                    <i class="bi bi-heart"></i>
+                                 </a>
+
+                              </div>
+                           </div>
+
+                           <div class="text-small mb-1">
+                              <small class="text-muted">{{ product.subcategory_name|default:category.name }}</small>
+                           </div>
+                           <h6 class="fw-semibold mt-2 mb-1 product-title" data-bs-toggle="tooltip"
+                              data-bs-title="{{ product.title }}">
+                              <a href="{% url 'view-product' product.id %}" class="text-dark">{{ product.title }}</a>
+                              </h2>
+                              {% if product.brand_name %}
+                              <p class="text-muted small mb-2">
+                                 <i class="bi bi-tag text-primary"></i> <span class="fw-semibold">{{ product.brand_name }}</span>
+                              </p>
+                              {% endif %}
+                              <div class="d-flex justify-content-between align-items-center mt-3">
+                                 <div>
+                                    <span class="text-dark">₹{{ product.sale_price|default:product.price }}</span>
+                                    {% if product.sale_price %}
+                                    <span class="text-decoration-line-through text-muted">₹{{ product.price }}</span>
+                                    {% endif %}
+                                 </div>
+
+                                 <div>
+                                    {% if product.stock <= 0 %} <button class="btn btn-secondary btn-sm" disabled
+                                       data-bs-toggle="tooltip" data-bs-title="Out of stock — Coming soon!">
+                                       Coming Soon
+                                       </button>
+                                       {% else %}
+                                       <a href="javascript:void(0);" class="btn btn-primary btn-sm"
+                                          onclick="addToCart({{ product.id }})">
+                                          Add
+                                       </a>
+                                       {% endif %}
+                                 </div>
+                              </div>
+
+                        </div>
+                     </div>
+                  </div>
+                  {% empty %}
+                  <div class="col-12 text-center text-muted py-5">
+                     <h5>No products found for this category.</h5>
+                  </div>
+                  {% endfor %}
+
+                  {% if total_pages > 1 %}
+                  <div class="border-top d-flex flex-wrap justify-content-between align-items-center mt-4 py-3">
+                     <span class="text-muted small">Showing {{ products|length }} of {{ total }} entries</span>
+                     <br> <br>
+                     <nav>
+                        <ul class="pagination mb-0">
+                           {% if page > 1 %}
+                           <li class="page-item">
+                              <a class="page-link px-3 py-1" href="?page={{ page|add:-1 }}">Previous</a>
+                           </li>
+                           {% else %}
+                           <li class="page-item disabled">
+                              <a class="page-link px-3 py-1" href="#">Previous</a>
+                           </li>
+                           {% endif %}
+
+                           {% for i in 1|to:total_pages %}
+                           <li class="page-item {% if i == page %}active{% endif %}">
+                              <a class="page-link px-3 py-1" href="?page={{ i }}">{{ i }}</a>
+                           </li>
+                           {% endfor %}
+
+                           {% if page < total_pages %} <li class="page-item">
+                              <a class="page-link px-3 py-1" href="?page={{ page|add:1 }}">Next</a>
+                              </li>
+                              {% else %}
+                              <li class="page-item disabled">
+                                 <a class="page-link px-3 py-1" href="#">Next</a>
+                              </li>
+                              {% endif %}
+                        </ul>
+                     </nav>
+                  </div>
+                  {% endif %}
+
+               </div>
+
+
+            </section>
+         </div>
+      </div>
+   </div>
+</main>
+
+
+
+
+
+<style>
+   /* ✅ Maintain uniform product card size */
+   .card.card-product {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+   }
+
+   .card.card-product .card-body {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+   }
+
+   /* ✅ Fix inconsistent image height */
+   .card.card-product img {
+      width: 100%;
+      height: 220px;
+      /* adjust height as needed (180–250px recommended) */
+      object-fit: cover;
+      border-radius: 0.25rem;
+   }
+
+   /* ✅ Consistent button area alignment */
+   .card.card-product .btn {
+      min-width: 70px;
+   }
+
+   /* ✅ Equal spacing between cards */
+   .row .col {
+      display: flex;
+   }
+
+   .product-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: block;
+      width: 100%;
+      cursor: pointer;
+   }
+
+   /* 🎨 Custom Bootstrap Tooltip Styling */
+   .custom-tooltip.bs-tooltip-top .tooltip-arrow::before {
+      border-top-color: #fff !important;
+   }
+
+   .custom-tooltip.bs-tooltip-bottom .tooltip-arrow::before {
+      border-bottom-color: #fff !important;
+   }
+
+   .custom-tooltip .tooltip-inner {
+      background-color: #fff !important;
+      /* white tooltip background */
+      color: #222 !important;
+      /* dark readable text */
+      font-size: 0.9rem;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-radius: 6px;
+      padding: 6px 10px;
+      max-width: 250px;
+      text-align: center;
+   }
+</style>
+
+<script>
+   document.addEventListener("DOMContentLoaded", function () {
+      const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+      tooltipTriggerList.map(function (tooltipTriggerEl) {
+         return new bootstrap.Tooltip(tooltipTriggerEl, {
+            customClass: 'custom-tooltip',
+            placement: 'top',     // You can use 'bottom', 'left', or 'right'
+            delay: { show: 150, hide: 50 }
+         });
+      });
+   });
+</script>
+
+<script>
+   async function addToCart(productId) {
+      const csrfToken = '{{ csrf_token }}';
+      const res = await fetch(`/add-to-cart/${productId}/`, {
+         method: "POST",
+         headers: { "X-CSRFToken": csrfToken },
+      });
+
+      const data = await res.json();
+
+      // ✅ Handle status responses
+      if (data.status === "added") {
+         Swal.fire({
+            icon: "success",
+            title: "Added to Cart ",
+            text: data.message || "Product successfully added.",
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 2500,
+            timerProgressBar: true,
+            background: "#f6fff5",
+            iconColor: "#28a745"
+         });
+
+         updateCartCount(1);
+
+      } else if (data.status === "updated") {
+         Swal.fire({
+            icon: "info",
+            title: "Product Already In your Cart",
+            text: data.message || "Product quantity increased in your cart.",
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 2500,
+            timerProgressBar: true,
+            background: "#fff7e6",
+            iconColor: "#ff9900"
+         });
+
+      } else if (data.status === "login_required") {
+         Swal.fire({
+            icon: "warning",
+            title: "Please Login",
+            text: "You must be logged in to add items to your cart.",
+            confirmButtonText: "Login Now",
+            confirmButtonColor: "#ff9900"
+         }).then(result => {
+            if (result.isConfirmed) {
+               window.location.href = "{% url 'userlogin' %}";
+            }
+         });
+
+      } else {
+         Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: data.message || "Something went wrong. Try again later.",
+            confirmButtonColor: "#d33"
+         });
+      }
+   }
+
+   // ✅ Optional — live cart badge update
+   function updateCartCount(change) {
+      const badge = document.querySelector('.feather-shopping-bag + span.badge');
+      if (data.status === "added") {
+         Swal.fire({
+            icon: "success",
+            title: "Added to Cart 🛒",
+            text: data.message || "Product successfully added.",
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 1500,
+            timerProgressBar: true,
+            background: "#f6fff5",
+            iconColor: "#28a745"
+         });
+
+         updateCartCount(1);  // ✅ increment cart badge
+      }
+
+   }
+</script>
+
+<!-- Wishlist -->
+<script>
+   async function addToWishlist(productId) {
+      const csrfToken = '{{ csrf_token }}';
+      const res = await fetch(`/add-to-wishlist/${productId}/`, {
+         method: "POST",
+         headers: { "X-CSRFToken": csrfToken }
+      });
+      const data = await res.json();
+
+      if (data.status === "added") {
+         Swal.fire({
+            icon: "success",
+            title: "Added to Wishlist ❤️",
+            text: data.message || "Product added successfully.",
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true,
+            background: "#fff5f8",
+            iconColor: "#ff4081"
+         });
+         updateWishlistCount(1);
+      }
+      else if (data.status === "exists") {
+         Swal.fire({
+            icon: "info",
+            title: "Already in Wishlist",
+            text: "This product is already saved.",
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 2000,
+            background: "#fdf6ec",
+            iconColor: "#f39c12"
+         });
+      }
+      else if (data.status === "login_required") {
+         Swal.fire({
+            icon: "warning",
+            title: "Login Required",
+            text: "Please login to use wishlist.",
+            confirmButtonText: "Login Now",
+            confirmButtonColor: "#ff9900"
+         }).then(res => {
+            if (res.isConfirmed) window.location.href = "{% url 'userlogin' %}";
+         });
+      }
+   }
+
+   function updateWishlistCount(change) {
+      const badge = document.getElementById("wishlistBadge");
+      if (badge) {
+         let count = parseInt(badge.textContent) || 0;
+         badge.textContent = Math.max(0, count + change);
+      }
+   }
+</script>
+
+{% endblock %}

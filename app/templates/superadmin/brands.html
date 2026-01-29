@@ -1,0 +1,288 @@
+{% extends 'superadmin/adminbase.html' %}
+{% load static %}
+{% block title %}Brands - Superadmin{% endblock %}
+{% block content %}
+
+<main class="main-content-wrapper">
+
+    <!-- ===================== DASHBOARD STYLING ONLY ===================== -->
+<div class="container-fluid mb-4">
+  <!-- Summary Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card shadow-sm border-0 text-center bg-white rounded-3 p-3">
+        <div class="d-flex align-items-center justify-content-center gap-3">
+          <div class="icon-shape  bg-opacity-10 text-success p-3 rounded-circle">
+            <i class="bi bi-tags fs-3"></i>
+          </div>
+          <div>
+            <h6 class="text-muted mb-1">Total Brands</h6>
+            <h3 class="fw-bold text-dark mb-0">{{ total_brands }}</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm border-0 text-center bg-white rounded-3 p-3">
+        <div class="d-flex align-items-center justify-content-center gap-3">
+          <div class="icon-shape  bg-opacity-10 text-warning p-3 rounded-circle">
+            <i class="bi bi-cash-coin fs-3"></i>
+          </div>
+          <div>
+            <h6 class="text-muted mb-1">Total Sales</h6>
+            <h3 class="fw-bold text-dark mb-0">₹{{ total_sales|floatformat:2 }}</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm border-0 text-center bg-white rounded-3 p-3">
+        <div class="d-flex align-items-center justify-content-center gap-3">
+          <div class="icon-shape  bg-opacity-10 text-info p-3 rounded-circle">
+            <i class="bi bi-eye fs-3"></i>
+          </div>
+          <div>
+            <h6 class="text-muted mb-1">Total Views</h6>
+            <h3 class="fw-bold text-dark mb-0">{{ total_views }}</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Brands by Sales & Views -->
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm rounded-3 h-100">
+        <div class="card-header bg-light fw-semibold">
+          <i class="bi bi-graph-up-arrow text-success me-2"></i> Top Brands by Sales
+        </div>
+        <div class="card-body">
+          {% if top_sales %}
+            <ol class="list-group list-group-numbered list-group-flush">
+              {% for b in top_sales %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>{{ b.name }}</span>
+                <span class="badge bg-success bg-opacity-75">₹{{ b.total_sales|default:0|floatformat:2 }}</span>
+              </li>
+              {% endfor %}
+            </ol>
+          {% else %}
+            <p class="text-muted text-center my-2">No sales data available.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm rounded-3 h-100">
+        <div class="card-header bg-light fw-semibold">
+          <i class="bi bi-bar-chart-line text-info me-2"></i> Top Brands by Views
+        </div>
+        <div class="card-body">
+          {% if top_views %}
+            <ol class="list-group list-group-numbered list-group-flush">
+              {% for b in top_views %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>{{ b.name }}</span>
+                <span class="badge bg-info bg-opacity-75">{{ b.total_views|default:0 }}</span>
+              </li>
+              {% endfor %}
+            </ol>
+          {% else %}
+            <p class="text-muted text-center my-2">No view data available.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ===================== END DASHBOARD ===================== -->
+
+  <div class="container-fluid">
+    <div class="row">
+      {% if not normal_mode %}
+      <!-- 🧩 LEFT COLUMN — Superadmin’s Brands -->
+      <div class="col-xl-6 col-lg-12 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-star-fill me-2"></i>Your Brands (Superadmin)</h5>
+            <a href="{% url 'add-brand' %}" class="btn btn-light btn-sm"><i class="bi bi-plus-circle me-1"></i>Add Brand</a>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table align-middle table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Logo</th>
+                    <th>Brand</th>
+                    <th>Products</th>
+                    <th>Sales (₹)</th>
+                    <th>Views</th>
+                    <th>Visibility</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for brand in super_brands %}
+                  <tr>
+                    <td><img src="/media/{{ brand.image }}" width="40" height="40" class="rounded" style="object-fit:cover;"></td>
+                    <td><strong>{{ brand.name }}</strong><br><small class="text-muted">{{ brand.slug }}</small></td>
+                    <td>{{ brand.product_count|default:0 }}</td>
+                    <td>{{ brand.total_sales|default:0|floatformat:2 }}</td>
+                    <td>{{ brand.total_views|default:0 }}</td>
+                    <td>
+                      <div class="form-check form-switch">
+                        <input class="form-check-input toggle-brand" type="checkbox"
+                               data-id="{{ brand.id }}"
+                               {% if brand.is_active %}checked{% endif %}>
+                      </div>
+                    </td>
+                    <td>
+                      <a href="{% url 'edit-brand' brand.id %}" class="btn btn-sm btn-outline-success"><i class="bi bi-pencil"></i></a>
+                      <a href="{% url 'delete-brand' brand.id %}" class="btn btn-sm btn-outline-danger"
+                         onclick="return confirm('Delete this brand?')"><i class="bi bi-trash"></i></a>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr><td colspan="7" class="text-center text-muted py-3">No Superadmin brands found.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🧩 RIGHT COLUMN — Normal Admin Brands with Filter -->
+      <div class="col-xl-6 col-lg-12 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-person-fill me-2 text-primary"></i>Normal Admin Brands</h5>
+            <form method="get" class="d-flex align-items-center">
+              <select name="admin_filter" class="form-select form-select-sm me-2" onchange="this.form.submit()">
+                <option value="">All Admins</option>
+                {% for adm in admin_list %}
+                  <option value="{{ adm.id }}" {% if selected_admin == adm.id|stringformat:"s" %}selected{% endif %}>{{ adm.username }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel"></i></button>
+            </form>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table align-middle table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Admin</th>
+                    <th>Brand</th>
+                    <th>Products</th>
+                    <th>Sales (₹)</th>
+                    <th>Views</th>
+                    <th>Visibility</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for brand in normal_admin_brands %}
+                  <tr>
+                    <td class="fw-semibold">{{ brand.admin_name }}</td>
+                    <td>
+                      <img src="/media/{{ brand.image }}" class="rounded me-2" width="40" height="40" style="object-fit:cover;">
+                      {{ brand.name }}
+                    </td>
+                    <td>{{ brand.product_count|default:0 }}</td>
+                    <td>{{ brand.total_sales|default:0|floatformat:2 }}</td>
+                    <td>{{ brand.total_views|default:0 }}</td>
+                    <td>
+                      <div class="form-check form-switch">
+                        <input class="form-check-input toggle-brand" type="checkbox"
+                               data-id="{{ brand.id }}"
+                               {% if brand.is_active %}checked{% endif %}>
+                      </div>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr><td colspan="6" class="text-center text-muted py-3">No brands found for this admin.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {% else %}
+      <!-- 🧩 Normal Admin Mode (unchanged) -->
+      <div class="col-12">
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-tags me-2"></i>Your Brands</h5>
+            <a href="{% url 'add-brand' %}" class="btn btn-light btn-sm"><i class="bi bi-plus-circle me-1"></i>Add Brand</a>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table align-middle table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Logo</th>
+                    <th>Brand</th>
+                    <th>Products</th>
+                    <th>Sales (₹)</th>
+                    <th>Views</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for brand in brands %}
+                  <tr>
+                    <td><img src="/media/{{ brand.image }}" width="40" height="40" class="rounded" style="object-fit:cover;"></td>
+                    <td>{{ brand.name }}</td>
+                    <td>{{ brand.product_count|default:0 }}</td>
+                    <td>{{ brand.total_sales|default:0|floatformat:2 }}</td>
+                    <td>{{ brand.total_views|default:0 }}</td>
+                    <td>
+                      <a href="{% url 'edit-brand' brand.id %}" class="btn btn-sm btn-outline-success"><i class="bi bi-pencil"></i></a>
+                      <a href="{% url 'delete-brand' brand.id %}" class="btn btn-sm btn-outline-danger"
+                         onclick="return confirm('Delete this brand?')"><i class="bi bi-trash"></i></a>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr><td colspan="6" class="text-center text-muted py-3">No brands found.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const toggles = document.querySelectorAll(".toggle-brand");
+  const csrf = document.querySelector("[name=csrfmiddlewaretoken]")?.value;
+  toggles.forEach(t => {
+    t.addEventListener("change", function () {
+      fetch(`/toggle-brand-status/${this.dataset.id}/`, {
+        method: "POST",
+        headers: {"X-CSRFToken": csrf, "Content-Type": "application/json"},
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "success") {
+          console.log("✅ " + data.message);
+        } else {
+          alert("⚠️ " + data.message);
+        }
+      });
+    });
+  });
+});
+</script>
+
+{% endblock %}
