@@ -1,0 +1,15 @@
+[Unit]
+Description=Gunicorn daemon for Yellow Banyan Ecommerce
+After=network.target
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/ecom/yellow_banyan
+ExecStart=/home/ubuntu/ecom/yellow_banyan/venv/bin/gunicorn --access-logfile - --workers 3 --bind 127.0.0.1:8000 Ecom.wsgi:application
+
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

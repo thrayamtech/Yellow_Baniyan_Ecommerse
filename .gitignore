@@ -1,19 +1,61 @@
 # Python
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyd
+.Python
 
 # Django
 db.sqlite3
+*.log
+
+# Settings with sensitive data (DB credentials)
+# Each environment (local/server) has its own settings.py
+Ecom/settings.py
+
+# Media/Uploaded Images - DO NOT UPLOAD TO SERVER
+# Server has its own images, don't overwrite
 media/
+media/*
+media/products/
+media/categories/
+media/brands/
+media/carousels/
+media/admins/
+media/review_images/
+
+# Uploaded files patterns
+uploads/
+uploaded/
 
 # Environment
 .env
 .env.*
+.env.local
+.env.production
 
 # Virtual environment
 venv/
 env/
+.venv/
+ENV/
 
 # OS
 .DS_Store
 Thumbs.db
+*.swp
+*~
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Byte-compiled / optimized / DLL files
+*.so
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/

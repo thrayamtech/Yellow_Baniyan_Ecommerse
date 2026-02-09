@@ -1,0 +1,47 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main  # Change to your default branch if different
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd /home/ubuntu/ecom/yellow_banyan
+
+            # Pull latest code
+            git pull origin main
+
+            # Activate virtual environment
+            source venv/bin/activate
+
+            # Install dependencies (if requirements changed)
+            pip install -r requirements.txt
+
+            # Run migrations (if any)
+            python manage.py migrate --noinput
+
+            # Collect static files
+            python manage.py collectstatic --noinput
+
+            # Restart Gunicorn
+            sudo systemctl restart gunicorn
+
+            # Reload Nginx (optional, for config changes)
+            sudo systemctl reload nginx
+
+            echo "Deployment completed successfully!"
