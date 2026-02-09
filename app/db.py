@@ -2,8 +2,8 @@ import pymysql
 
 def get_connection():
     return pymysql.connect(
-        user="root",
-        password="",
+        user="ecomuser",
+        password="Ecom@123",
         host="localhost",
         database="ecom",
         charset="utf8mb4",

@@ -34,8 +34,12 @@ jobs:
             echo "=========================================="
             git fetch origin main
             git reset --hard origin/main
+            git clean -fd  # Remove untracked files
             echo "Git pull completed"
             echo "Latest commit: $(git log -1 --oneline)"
+            echo ""
+            echo "Files in directory:"
+            ls -la
 
             echo ""
             echo "=========================================="
@@ -49,8 +53,16 @@ jobs:
             echo "=========================================="
             echo "STAGE 4: Install dependencies"
             echo "=========================================="
-            pip install -r requirements.txt --quiet
-            echo "Dependencies installed"
+            if [ -f requirements.txt ]; then
+              echo "Found requirements.txt"
+              pip install -r requirements.txt --quiet
+              echo "Dependencies installed"
+            else
+              echo "ERROR: requirements.txt not found!"
+              echo "Files in current directory:"
+              ls -la
+              exit 1
+            fi
 
             echo ""
             echo "=========================================="
