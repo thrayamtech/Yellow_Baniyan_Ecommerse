@@ -123,6 +123,6 @@ sudo systemctl status gunicorn
 ### If static files not loading:
 ```bash
 cd /home/ubuntu/ecom/yellow_banyan
-source venv/bin/activate
+source ../venv/bin/activate
 python manage.py collectstatic --noinput
 ```
