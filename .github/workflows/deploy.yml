@@ -82,6 +82,9 @@ jobs:
             echo "=========================================="
             echo "STAGE 7: Restart Gunicorn service"
             echo "=========================================="
+            # Kill any process using port 8000
+            sudo fuser -k 8000/tcp 2>/dev/null || true
+            sleep 1
             sudo systemctl restart gunicorn
             sleep 3  # Wait for service to start
 
@@ -100,13 +103,14 @@ jobs:
 
             echo ""
             echo "=========================================="
-            echo "STAGE 9: Reload Nginx"
+            echo "STAGE 9: Restart Nginx"
             echo "=========================================="
-            sudo systemctl reload nginx
+            sudo systemctl restart nginx
             if sudo systemctl is-active --quiet nginx; then
               echo "Nginx is RUNNING"
             else
-              echo "ERROR: Nginx is not running!"
+              echo "ERROR: Nginx FAILED to start!"
+              sudo journalctl -u nginx --since "2 minutes ago" --no-pager
               exit 1
             fi
 
