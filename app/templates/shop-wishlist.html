@@ -114,9 +114,9 @@ async function wishlistAddToCart(productId) {
     button.innerHTML = "Added to Cart ✅";
 
     updateWishlistCount(-1);
-    updateCartCount(1);
+    if (data.cart_count !== undefined) setCartCount(data.cart_count);
 
-    // ✅ remove the row smoothly after delay
+    // remove the row smoothly after delay
     setTimeout(() => {
       row.style.transition = "opacity 0.5s";
       row.style.opacity = "0";
@@ -186,21 +186,6 @@ async function removeWishlistItem(productId) {
   }
 }
 
-function updateCartCount(change) {
-  const badge = document.getElementById('cartCountBadge');
-  if (badge) {
-    let count = parseInt(badge.textContent) || 0;
-    badge.textContent = Math.max(0, count + change);
-  }
-}
-
-function updateWishlistCount(change) {
-  const badge = document.getElementById('wishlistBadge');
-  if (badge) {
-    let count = parseInt(badge.textContent) || 0;
-    badge.textContent = Math.max(0, count + change);
-  }
-}
 </script>
 
 {% endblock %}

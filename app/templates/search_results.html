@@ -104,7 +104,7 @@ async function addToCart(productId) {
       iconColor: "#28a745"
     });
 
-    updateCartCount(1);
+    if (data.cart_count !== undefined) setCartCount(data.cart_count);
 
   } else if (data.status === "updated") {
     Swal.fire({
@@ -119,6 +119,7 @@ async function addToCart(productId) {
       background: "#fff7e6",
       iconColor: "#ff9900"
     });
+    if (data.cart_count !== undefined) setCartCount(data.cart_count);
 
   } else if (data.status === "login_required") {
     Swal.fire({
@@ -143,26 +144,6 @@ async function addToCart(productId) {
   }
 }
 
-// ✅ Optional — live cart badge update
-function updateCartCount(change) {
-  const badge = document.querySelector('.feather-shopping-bag + span.badge');
-  if (data.status === "added") {
-    Swal.fire({
-      icon: "success",
-      title: "Added to Cart 🛒",
-      text: data.message || "Product successfully added.",
-      toast: true,
-      position: "top-end",
-      showConfirmButton: false,
-      timer: 1500,
-      timerProgressBar: true,
-      background: "#f6fff5",
-      iconColor: "#28a745"
-    });
-
-    updateCartCount(1);  // ✅ increment cart badge
-}
-}
 </script>
 
 

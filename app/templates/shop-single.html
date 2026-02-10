@@ -60,9 +60,11 @@
 
         <!-- 🏷️ Brand -->
         {% if product.brand_name %}
-        <span class="badge bg-light text-dark border mb-2">
-          <i class="bi bi-tag-fill text-primary me-1"></i>{{ product.brand_name }}
-        </span>
+        <a href="{% url 'brand-products' product.brand_id %}" class="text-decoration-none">
+          <span class="badge bg-light text-dark border mb-2" style="cursor: pointer;">
+            <i class="bi bi-tag-fill text-primary me-1"></i>{{ product.brand_name }}
+          </span>
+        </a>
         {% endif %}
 
         <!-- 🧭 Category / Subcategory -->
@@ -125,24 +127,26 @@
           </form>
         </div>
         
-        <div class="card border-0 shadow-sm p-3" style="height: 265px; overflow-y: auto;">
+        <div class="card border-0 shadow-sm p-3" style="max-height: 280px; overflow-y: auto;">
     <h5 class="fw-bold mb-3">Product Details</h5>
+
+    {% if product.description %}
+    <div class="mb-3" style="font-size: 0.9rem;">
+      {{ product.description|truncatewords:50|linebreaksbr }}
+    </div>
+    {% endif %}
 
     {% if grouped_attrs %}
     <div class="table-responsive">
-        <table class="table table-bordered align-middle">
+        <table class="table table-bordered align-middle mb-0">
             <tbody>
-
-                {% for pair in grouped_attrs %}
-                    <!-- First item always exists -->
+                {% for pair in grouped_attrs|slice:":5" %}
                     <tr>
                         <th class="bg-light fw-semibold" style="width:30%;">
                             {{ pair.0.field_name|capfirst }}
                         </th>
                         <td>{{ pair.0.field_value }}</td>
                     </tr>
-
-                    <!-- Second item only if available -->
                     {% if pair|length > 1 %}
                     <tr>
                         <th class="bg-light fw-semibold" style="width:30%;">
@@ -151,11 +155,14 @@
                         <td>{{ pair.1.field_value }}</td>
                     </tr>
                     {% endif %}
-
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    {% endif %}
+
+    {% if not product.description and not grouped_attrs %}
+    <p class="text-muted small mb-0">No details available for this product.</p>
     {% endif %}
 </div>
 
@@ -428,7 +435,7 @@
         iconColor: "#28a745"
       });
 
-      updateCartCount(1);
+      if (data.cart_count !== undefined) setCartCount(data.cart_count);
 
     } else if (data.status === "updated") {
       Swal.fire({
@@ -443,6 +450,7 @@
         background: "#fff7e6",
         iconColor: "#ff9900"
       });
+      if (data.cart_count !== undefined) setCartCount(data.cart_count);
 
     } else if (data.status === "login_required") {
       Swal.fire({
@@ -467,27 +475,6 @@
     }
   }
 
-  // ✅ Optional — live cart badge update
-  function updateCartCount(change) {
-    const badge = document.querySelector('.feather-shopping-bag + span.badge');
-    if (data.status === "added") {
-      Swal.fire({
-        icon: "success",
-        title: "Added to Cart 🛒",
-        text: data.message || "Product successfully added.",
-        toast: true,
-        position: "top-end",
-        showConfirmButton: false,
-        timer: 1500,
-        timerProgressBar: true,
-        background: "#f6fff5",
-        iconColor: "#28a745"
-      });
-
-      updateCartCount(1);  // ✅ increment cart badge
-    }
-
-  }
 </script>
 
 <script>

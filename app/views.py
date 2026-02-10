@@ -2085,7 +2085,7 @@ def add_carousel_image(request):
         image_file = request.FILES.get("image")
 
         # ---------- IMAGE VALIDATION ----------
-        ALLOWED_FORMATS = ["JPEG", "JPG", "WEBP"]
+        ALLOWED_FORMATS = ["JPEG", "JPG", "WEBP", "PNG"]
         MAX_FILE_SIZE = 300 * 1024  # 300 KB
         REQUIRED_WIDTH = 1920
         REQUIRED_HEIGHT = 800
@@ -2209,7 +2209,7 @@ def edit_carousel(request, id):
             saved_name = fs.save(filename, image_file)
             image_path = f"carousels/{saved_name}"
                         # ---------- IMAGE VALIDATION ----------
-            ALLOWED_FORMATS = ["JPEG", "JPG", "WEBP"]
+            ALLOWED_FORMATS = ["JPEG", "JPG", "WEBP", "PNG"]
             MAX_FILE_SIZE = 300 * 1024  # 300 KB
             REQUIRED_WIDTH = 1920
             REQUIRED_HEIGHT = 800
@@ -2326,7 +2326,7 @@ def add_category(request):
         REQUIRED_WIDTH = 400
         REQUIRED_HEIGHT = 400
         MAX_SIZE = 200 * 1024
-        ALLOWED_FORMATS = ["JPEG", "JPG", "WEBP"]
+        ALLOWED_FORMATS = ["JPEG", "JPG", "WEBP", "PNG"]
 
         try:
             if image_file.size > MAX_SIZE:
@@ -2396,7 +2396,7 @@ def edit_category(request, id):
         REQUIRED_WIDTH = 400
         REQUIRED_HEIGHT = 400
         MAX_SIZE = 200 * 1024
-        ALLOWED_FORMATS = ["JPEG", "JPG", "WEBP"]
+        ALLOWED_FORMATS = ["JPEG", "JPG", "WEBP", "PNG"]
 
         try:
             if image_file.size > MAX_SIZE:
@@ -2600,7 +2600,7 @@ def add_brand(request):
         REQUIRED_WIDTH = 400
         REQUIRED_HEIGHT = 400
         MAX_SIZE = 200 * 1024
-        ALLOWED_FORMATS = ["JPEG", "JPG", "WEBP"]
+        ALLOWED_FORMATS = ["JPEG", "JPG", "WEBP", "PNG"]
 
         if image_file:
             try:
@@ -2708,7 +2708,7 @@ def edit_brand(request, id):
             REQUIRED_WIDTH = 400
             REQUIRED_HEIGHT = 400
             MAX_SIZE = 200 * 1024
-            ALLOWED_FORMATS = ["JPEG", "JPG", "WEBP"]
+            ALLOWED_FORMATS = ["JPEG", "JPG", "WEBP", "PNG"]
 
             if image_file:
                 try:

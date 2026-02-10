@@ -133,17 +133,15 @@
                                 <div class="text-center position-relative">
                                     <div class="position-absolute top-0 start-0">
                                         {% if p.stock <= 0 %}
-                                        <span class="badge bg-secondary">Coming Soon</span>
-                                        {% elif p.stock < 10 %}
-                                        <span class="badge bg-warning text-dark">Only {{ p.stock }} Left</span>
+                                        <span class="badge bg-secondary">Out of Stock</span>
                                         {% elif p.sale_price and p.sale_price|floatformat:2 < p.price|floatformat:2 %}
                                         <span class="badge bg-danger">Sale</span>
                                         {% endif %}
                                     </div>
 
                                     <a href="{% url 'view-product' p.id %}">
-                                        <img src="/media/{{ p.main_image }}" class="img-fluid rounded mb-2"
-                                            style="height:200px;object-fit:cover;" alt="{{ p.title }}">
+                                        <img src="/media/{{ p.main_image }}" class="img-fluid rounded mb-3"
+                                            style="height:220px;object-fit:cover;" alt="{{ p.title }}">
                                     </a>
 
                                     <div class="card-product-action">
@@ -153,23 +151,29 @@
                                         </a>
                                     </div>
                                 </div>
-                                <a href="{% url 'view-product' p.id %}">
-                                <h6 class="fw-semibold mt-2 mb-1 text-truncate">{{ p.title }}</h6>
-                                 </a>
-                                <p class="text-muted small mb-1">{{ p.category_name }}</p>
-                                <p class="text-dark fw-semibold mb-0">₹{{ p.sale_price|default:p.price }}</p>
-                                <div>
-                                    {% if p.stock <= 0 %}
-                                    <button class="btn btn-secondary btn-sm" disabled
-                                        data-bs-toggle="tooltip" data-bs-title="Out of stock — Coming soon!">
-                                        Coming Soon
-                                    </button>
-                                    {% else %}
-                                    <a href="javascript:void(0);" class="btn btn-primary btn-sm"
-                                        onclick="addToCart({{ p.id }})">
-                                        Add to Cart
-                                    </a>
-                                    {% endif %}
+
+                                <div class="text-small mb-1">
+                                    <small class="text-muted">{{ p.category_name }} › {{ p.subcategory_name|default:"General" }}</small>
+                                </div>
+
+                                <h6 class="fw-semibold text-truncate">
+                                    <a href="{% url 'view-product' p.id %}" class="text-dark">{{ p.title }}</a>
+                                </h6>
+
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <div>
+                                        <span class="text-dark">₹{{ p.sale_price|default:p.price }}</span>
+                                        {% if p.sale_price %}
+                                        <span class="text-decoration-line-through text-muted">₹{{ p.price }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        {% if p.stock <= 0 %}
+                                        <button class="btn btn-secondary btn-sm" disabled>Out of Stock</button>
+                                        {% else %}
+                                        <button class="btn btn-primary btn-sm" onclick="addToCart({{ p.id }})">Add</button>
+                                        {% endif %}
+                                    </div>
                                 </div>
 
                             </div>
@@ -209,7 +213,7 @@
             background: "#f6fff5",
             iconColor: "#28a745"
          });
-         updateCartCount(1);
+         if (data.cart_count !== undefined) setCartCount(data.cart_count);
       }
       else if (data.status === "updated") {
          Swal.fire({
@@ -223,6 +227,7 @@
             background: "#fff7e6",
             iconColor: "#ff9900"
          });
+         if (data.cart_count !== undefined) setCartCount(data.cart_count);
       }
       else if (data.status === "login_required") {
          Swal.fire({
@@ -247,13 +252,6 @@
       }
    }
 
-   function updateCartCount(change) {
-      const badge = document.querySelector('.feather-shopping-bag + span.badge');
-      if (badge) {
-         let count = parseInt(badge.textContent) || 0;
-         badge.textContent = Math.max(0, count + change);
-      }
-   }
 
    async function addToWishlist(productId) {
       const csrfToken = '{{ csrf_token }}';
