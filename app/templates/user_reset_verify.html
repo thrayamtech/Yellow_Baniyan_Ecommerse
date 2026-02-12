@@ -1,0 +1,99 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+   <meta charset="utf-8" />
+   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+   <title>Verify OTP - Yellow Banyan</title>
+   <link rel="shortcut icon" type="image/x-icon" href="{% static 'assets/images/favicon/favicon.ico' %}" />
+   <link href="{% static 'assets/libs/bootstrap-icons/font/bootstrap-icons.min.css' %}" rel="stylesheet" />
+   <link href="{% static 'assets/libs/feather-webfont/dist/feather-icons.css' %}" rel="stylesheet" />
+   <link href="{% static 'assets/libs/simplebar/dist/simplebar.min.css' %}" rel="stylesheet" />
+   <link rel="stylesheet" href="{% static 'assets/css/theme.min.css' %}" />
+</head>
+
+<body>
+   <div class="border-bottom shadow-sm">
+      <nav class="navbar navbar-light py-2">
+         <div class="container justify-content-center justify-content-lg-between">
+            <a class="navbar-brand" href="{% url 'index' %}">
+               <img src="{% static '/assets/images/logo/yellow-banyan-logo.png' %}" alt=""
+                  class="d-inline-block align-text-top" />
+            </a>
+         </div>
+      </nav>
+   </div>
+
+   <main>
+      <section class="my-lg-14 my-8">
+         <div class="container">
+            <div class="row justify-content-center">
+               <div class="col-12 col-md-6 col-lg-5">
+                  <div class="card shadow-sm p-4">
+                     <div class="mb-4 text-center">
+                        <h2 class="fw-bold">Verify OTP</h2>
+                        <p class="text-muted">Enter the 6-digit code sent to your email and set a new password.</p>
+                     </div>
+
+                     {% if messages %}
+                     {% for message in messages %}
+                     <div
+                        class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} alert-dismissible fade show"
+                        role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                     </div>
+                     {% endfor %}
+                     {% endif %}
+
+                     <form method="POST" action="{% url 'user-reset-verify' %}" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        <div class="mb-3">
+                           <label class="form-label">Enter OTP</label>
+                           <input type="text" name="otp" class="form-control" placeholder="Enter 6-digit code"
+                              maxlength="6" required>
+                           <div class="invalid-feedback">Please enter the OTP.</div>
+                        </div>
+                        <div class="mb-3">
+                           <label class="form-label">New Password</label>
+                           <input type="password" name="new_password" class="form-control"
+                              placeholder="New password (min 6 characters)" minlength="6" required>
+                           <div class="invalid-feedback">Password must be at least 6 characters.</div>
+                        </div>
+                        <div class="mb-3">
+                           <label class="form-label">Confirm Password</label>
+                           <input type="password" name="confirm_password" class="form-control"
+                              placeholder="Confirm new password" minlength="6" required>
+                           <div class="invalid-feedback">Please confirm your password.</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Reset Password</button>
+                     </form>
+
+                     <div class="text-center mt-3">
+                        <a href="{% url 'user-forgot-password' %}" class="text-decoration-none">Resend OTP</a>
+                        <span class="mx-2">|</span>
+                        <a href="{% url 'userlogin' %}" class="text-decoration-none">Back to Login</a>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </section>
+   </main>
+
+   <script src="{% static '/assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js' %}"></script>
+   <script src="{% static '/assets/libs/simplebar/dist/simplebar.min.js' %}"></script>
+   <script src="{% static '/assets/js/theme.min.js' %}"></script>
+   <script src="{% static '/assets/js/vendors/validation.js' %}"></script>
+   <script>
+      setTimeout(() => {
+         document.querySelectorAll('.alert').forEach(el => {
+            let fade = new bootstrap.Alert(el);
+            fade.close();
+         });
+      }, 4000);
+   </script>
+</body>
+
+</html>

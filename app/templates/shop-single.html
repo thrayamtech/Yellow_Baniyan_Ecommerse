@@ -98,11 +98,11 @@
 
         <!-- 💰 Price -->
         <div class="d-flex align-items-center mb-3">
-          {% if product.sale_price %}
+          {% if product.sale_price and product.sale_price != product.price %}
           <h4 class="text-dark me-3 mb-0">₹{{ product.sale_price }}</h4>
           <span class="text-decoration-line-through text-muted">₹{{ product.price }}</span>
           {% else %}
-          <h4 class="text-dark mb-0">₹{{ product.price }}</h4>
+          <h4 class="text-dark mb-0">₹{{ product.sale_price|default:product.price }}</h4>
           {% endif %}
         </div>
 
@@ -270,7 +270,7 @@
               <p class="text-muted small mb-1">{{ r.subcategory_name|default:r.category_name }}</p>
               <div>
                 <span class="text-dark fw-semibold">₹{{ r.sale_price|default:r.price }}</span>
-                {% if r.sale_price %}
+                {% if r.sale_price and r.sale_price != r.price %}
                 <span class="text-decoration-line-through text-muted small">₹{{ r.price }}</span>
                 {% endif %}
               </div>

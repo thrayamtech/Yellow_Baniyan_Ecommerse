@@ -48,11 +48,11 @@
                   Category: {{ product.category_name|default:"N/A" }}
                 </p>
                 <p class="mb-0 fw-semibold text-dark">
-                  {% if product.sale_price %}
+                  {% if product.sale_price and product.sale_price != product.price %}
                   ₹{{ product.sale_price }}
                   <span class="text-decoration-line-through text-muted small">₹{{ product.price }}</span>
                   {% else %}
-                  ₹{{ product.price }}
+                  ₹{{ product.sale_price|default:product.price }}
                   {% endif %}
                 </p>
                 <p class="small text-success mt-1 mb-0">In Stock</p>

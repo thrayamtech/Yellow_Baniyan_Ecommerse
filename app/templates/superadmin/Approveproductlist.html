@@ -23,7 +23,13 @@
             <tbody>
                {% for product in products %}
                <tr>
-                  <td><img src="/media/{{ product.main_image }}" width="60" height="60" class="rounded"></td>
+                  <td>
+                     {% if product.main_image %}
+                     <img src="/media/{{ product.main_image }}" width="60" height="60" class="rounded" style="object-fit:cover;">
+                     {% else %}
+                     <img src="{% static 'assets/images/docs/placeholder-img.jpg' %}" width="60" height="60" class="rounded" style="object-fit:cover;">
+                     {% endif %}
+                  </td>
                   <td>{{ product.title }}</td>
                   <td>{{ product.category_name }}</td>
                   <td>{{ product.brand_name|default:"—" }}</td>

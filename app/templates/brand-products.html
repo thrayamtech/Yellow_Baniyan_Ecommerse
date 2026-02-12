@@ -163,7 +163,7 @@
                                 <div class="d-flex justify-content-between align-items-center mt-2">
                                     <div>
                                         <span class="text-dark">₹{{ p.sale_price|default:p.price }}</span>
-                                        {% if p.sale_price %}
+                                        {% if p.sale_price and p.sale_price != p.price %}
                                         <span class="text-decoration-line-through text-muted">₹{{ p.price }}</span>
                                         {% endif %}
                                     </div>

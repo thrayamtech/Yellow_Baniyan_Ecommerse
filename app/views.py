@@ -66,7 +66,7 @@ def index(request):
     most_viewed = db.selectall("""
         SELECT p.id, p.title, p.price, p.sale_price, p.stock,
             (SELECT image FROM product_images WHERE product_id=p.id LIMIT 1) AS main_image,
-            COUNT(v.id) AS view_count
+            COUNT(DISTINCT v.user_id) AS view_count
         FROM product_views v
         JOIN products p ON v.product_id = p.id
         WHERE p.approved=1 AND p.pending_approval=0 AND p.disapproved=0 AND p.is_active=1
@@ -344,6 +344,75 @@ def userlogout(request):
     request.session.flush()
     messages.success(request, "You have been logged out.")
     return redirect("userlogin")
+
+
+def user_forgot_password(request):
+    if request.method == "POST":
+        email = request.POST.get("email", "").strip()
+        user = db.selectone("SELECT * FROM users WHERE email=%s", (email,))
+
+        if not user:
+            messages.error(request, "No account found with that email.")
+            return redirect("user-forgot-password")
+
+        otp = ''.join(random.choices(string.digits, k=6))
+        request.session['user_reset_email'] = email
+        request.session['user_reset_otp'] = otp
+
+        try:
+            send_mail(
+                subject="Password Reset OTP - Yellow Banyan",
+                message=f"Your OTP for password reset is: {otp}\n\nThis code is valid for this session only. Do not share it with anyone.",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                fail_silently=False,
+            )
+            messages.success(request, "OTP sent to your email. Please check your inbox.")
+            return redirect("user-reset-verify")
+        except Exception as e:
+            messages.error(request, "Error sending email. Please try again later.")
+            print(e)
+            return redirect("user-forgot-password")
+
+    return render(request, "forgot-password.html")
+
+
+def user_reset_verify(request):
+    if request.method == "POST":
+        otp = request.POST.get("otp", "").strip()
+        new_password = request.POST.get("new_password", "").strip()
+        confirm_password = request.POST.get("confirm_password", "").strip()
+
+        session_otp = request.session.get("user_reset_otp")
+        email = request.session.get("user_reset_email")
+
+        if not session_otp or not email:
+            messages.error(request, "Session expired. Please restart the reset process.")
+            return redirect("user-forgot-password")
+
+        if otp != session_otp:
+            messages.error(request, "Invalid OTP.")
+            return redirect("user-reset-verify")
+
+        if new_password != confirm_password:
+            messages.error(request, "Passwords do not match.")
+            return redirect("user-reset-verify")
+
+        if len(new_password) < 6:
+            messages.error(request, "Password must be at least 6 characters.")
+            return redirect("user-reset-verify")
+
+        hashed_pwd = make_password(new_password)
+        db.update("UPDATE users SET password=%s WHERE email=%s", (hashed_pwd, email))
+
+        request.session.pop("user_reset_email", None)
+        request.session.pop("user_reset_otp", None)
+
+        messages.success(request, "Password reset successful! You can now log in.")
+        return redirect("userlogin")
+
+    return render(request, "user_reset_verify.html")
+
 
 from django.views.decorators.csrf import csrf_exempt
 
@@ -641,9 +710,15 @@ def view_product(request, id):
         
     user_id = request.session.get("user_id")
     if user_id:
-        db.insert("""
-            INSERT INTO product_views (user_id, product_id) VALUES (%s, %s)
+        # Only count one view per user per product per day
+        already_viewed = db.selectone("""
+            SELECT id FROM product_views
+            WHERE user_id=%s AND product_id=%s AND DATE(created_at)=CURDATE()
         """, (user_id, id))
+        if not already_viewed:
+            db.insert("""
+                INSERT INTO product_views (user_id, product_id) VALUES (%s, %s)
+            """, (user_id, id))
 
     
 
@@ -1990,6 +2065,23 @@ def customers(request):
     })
 
 
+@require_POST
+def toggle_vip(request, user_id):
+    if "admin_id" not in request.session:
+        return JsonResponse({"status": "error", "message": "Unauthorized"}, status=403)
+
+    admin = db.selectone("SELECT * FROM adminusers WHERE id=%s", (request.session["admin_id"],))
+    if not admin or not admin["is_superadmin"]:
+        return JsonResponse({"status": "error", "message": "Access denied"}, status=403)
+
+    user = db.selectone("SELECT id, is_vip FROM users WHERE id=%s", (user_id,))
+    if not user:
+        return JsonResponse({"status": "error", "message": "User not found"}, status=404)
+
+    new_status = not user.get("is_vip", False)
+    db.update("UPDATE users SET is_vip=%s WHERE id=%s", (new_status, user_id))
+    return JsonResponse({"status": "success", "is_vip": new_status})
+
 
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def get_user_details(request, user_id):
@@ -2111,7 +2203,7 @@ def add_carousel_image(request):
             if format not in ALLOWED_FORMATS:
                 messages.error(
                     request,
-                    "Only JPG, JPEG, or WebP images are allowed."
+                    "Only JPG, JPEG, PNG, or WebP images are allowed."
                 )
                 return redirect(request.path)
 
@@ -2125,7 +2217,9 @@ def add_carousel_image(request):
             messages.error(request, "Please fill all required fields.")
             return redirect("add-carousel-image")
 
-        
+        # Reset file pointer after PIL read
+        image_file.seek(0)
+
         # ✅ Save image file
         fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, "carousels"))
         filename = get_random_string(8) + "_" + image_file.name
@@ -2204,11 +2298,7 @@ def edit_carousel(request, id):
 
         image_path = carousel["image"]
         if image_file:
-            fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, "carousels"))
-            filename = get_random_string(8) + "_" + image_file.name
-            saved_name = fs.save(filename, image_file)
-            image_path = f"carousels/{saved_name}"
-                        # ---------- IMAGE VALIDATION ----------
+            # ---------- IMAGE VALIDATION ----------
             ALLOWED_FORMATS = ["JPEG", "JPG", "WEBP", "PNG"]
             MAX_FILE_SIZE = 300 * 1024  # 300 KB
             REQUIRED_WIDTH = 1920
@@ -2228,14 +2318,14 @@ def edit_carousel(request, id):
                 if width != REQUIRED_WIDTH or height != REQUIRED_HEIGHT:
                     messages.error(
                         request,
-                        "Image Size must be exactly 1920 × 800 pixels."
+                        "Image size must be exactly 1920 × 800 pixels."
                     )
                     return redirect(request.path)
 
                 if format not in ALLOWED_FORMATS:
                     messages.error(
                         request,
-                        "Only JPG, JPEG, or WebP images are allowed."
+                        "Only JPG, JPEG, PNG, or WebP images are allowed."
                     )
                     return redirect(request.path)
 
@@ -2244,6 +2334,14 @@ def edit_carousel(request, id):
                 return redirect(request.path)
             # ---------- END VALIDATION ----------
 
+            # Reset file pointer after PIL read
+            image_file.seek(0)
+
+            # ✅ Save image file
+            fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, "carousels"))
+            filename = get_random_string(8) + "_" + image_file.name
+            saved_name = fs.save(filename, image_file)
+            image_path = f"carousels/{saved_name}"
 
         # ✅ Use plain triple-quoted string, no f-string
         db.update("""
@@ -2342,7 +2440,7 @@ def add_category(request):
                 return redirect(request.path)
 
             if format not in ALLOWED_FORMATS:
-                messages.error(request, "Only JPG, JPEG, or WebP images are allowed.")
+                messages.error(request, "Only JPG, JPEG, PNG, or WebP images are allowed.")
                 return redirect(request.path)
 
         except Exception:
@@ -2353,6 +2451,9 @@ def add_category(request):
         if not category_name or not image_file:
             messages.error(request, "Please fill all required fields.")
             return redirect("add-category")
+
+        # Reset file pointer after PIL read
+        image_file.seek(0)
 
         fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, "categories"))
         filename = get_random_string(8) + "_" + image_file.name
@@ -2412,7 +2513,7 @@ def edit_category(request, id):
                 return redirect(request.path)
 
             if format not in ALLOWED_FORMATS:
-                messages.error(request, "Only JPG, JPEG, or WebP images are allowed.")
+                messages.error(request, "Only JPG, JPEG, PNG, or WebP images are allowed.")
                 return redirect(request.path)
 
         except Exception:
@@ -2422,6 +2523,8 @@ def edit_category(request, id):
 
         image_path = category["image"]
         if image_file:
+            # Reset file pointer after PIL read
+            image_file.seek(0)
             fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, "categories"))
             filename = get_random_string(8) + "_" + image_file.name
             saved_name = fs.save(filename, image_file)
@@ -2617,7 +2720,7 @@ def add_brand(request):
                     return redirect(request.path)
 
                 if format not in ALLOWED_FORMATS:
-                    messages.error(request, "Only JPG, JPEG, or WebP images are allowed.")
+                    messages.error(request, "Only JPG, JPEG, PNG, or WebP images are allowed.")
                     return redirect(request.path)
 
             except Exception:
@@ -2634,6 +2737,9 @@ def add_brand(request):
         if existing:
             messages.error(request, f"⚠️ Brand '{brand_name}' already exists.")
             return redirect("add-brand")
+
+        # Reset file pointer after PIL read
+        image_file.seek(0)
 
         # ✅ Save image
         fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, "brands"))
@@ -2700,37 +2806,41 @@ def edit_brand(request, id):
 
         image_path = brand["image"]
         if image_file:
-            fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, "brands"))
-            filename = get_random_string(8) + "_" + image_file.name
-            saved_name = fs.save(filename, image_file)
-            image_path = f"brands/{saved_name}"
-            
+            # ---------- IMAGE VALIDATION ----------
             REQUIRED_WIDTH = 400
             REQUIRED_HEIGHT = 400
             MAX_SIZE = 200 * 1024
             ALLOWED_FORMATS = ["JPEG", "JPG", "WEBP", "PNG"]
 
-            if image_file:
-                try:
-                    if image_file.size > MAX_SIZE:
-                        messages.error(request, "Brand image must be under 200 KB.")
-                        return redirect(request.path)
-
-                    img = Image.open(image_file)
-                    width, height = img.size
-                    format = img.format.upper()
-
-                    if width != REQUIRED_WIDTH or height != REQUIRED_HEIGHT:
-                        messages.error(request, "Brand image must be exactly 400 × 400 pixels.")
-                        return redirect(request.path)
-
-                    if format not in ALLOWED_FORMATS:
-                        messages.error(request, "Only JPG, JPEG, or WebP images are allowed.")
-                        return redirect(request.path)
-
-                except Exception:
-                    messages.error(request, "Invalid brand image file.")
+            try:
+                if image_file.size > MAX_SIZE:
+                    messages.error(request, "Brand image must be under 200 KB.")
                     return redirect(request.path)
+
+                img = Image.open(image_file)
+                width, height = img.size
+                format = img.format.upper()
+
+                if width != REQUIRED_WIDTH or height != REQUIRED_HEIGHT:
+                    messages.error(request, "Brand image must be exactly 400 × 400 pixels.")
+                    return redirect(request.path)
+
+                if format not in ALLOWED_FORMATS:
+                    messages.error(request, "Only JPG, JPEG, PNG, or WebP images are allowed.")
+                    return redirect(request.path)
+
+            except Exception:
+                messages.error(request, "Invalid brand image file.")
+                return redirect(request.path)
+            # ---------- END VALIDATION ----------
+
+            # Reset file pointer after PIL read
+            image_file.seek(0)
+
+            fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, "brands"))
+            filename = get_random_string(8) + "_" + image_file.name
+            saved_name = fs.save(filename, image_file)
+            image_path = f"brands/{saved_name}"
             
         if not brand_name:
             messages.error(request, "Brand name is required.")
@@ -2777,7 +2887,17 @@ def products(request):
 
     admin_id = request.session["admin_id"]
     admin = db.selectone("SELECT * FROM adminusers WHERE id=%s", (admin_id,))
-    categories = db.selectall("SELECT * FROM categories ORDER BY name ASC")
+
+    # Superadmin sees all categories, vendors only see categories where they have brands
+    if admin["is_superadmin"]:
+        categories = db.selectall("SELECT * FROM categories ORDER BY name ASC")
+    else:
+        categories = db.selectall("""
+            SELECT DISTINCT c.* FROM categories c
+            INNER JOIN brands b ON b.category_id = c.id
+            WHERE b.admin_id = %s
+            ORDER BY c.name ASC
+        """, (admin_id,))
 
     # ✅ Add this line to fetch active plan
     all_plans = db.selectall("SELECT * FROM plans WHERE is_active=1 ORDER BY price ASC")
@@ -2799,11 +2919,22 @@ def add_productcategory(request, category_id):
     admin_id = request.session["admin_id"]
     admin = db.selectone("SELECT * FROM adminusers WHERE id=%s", (admin_id,))
     category = db.selectone("SELECT * FROM categories WHERE id=%s", (category_id,))
-    brands = db.selectall("SELECT * FROM brands WHERE category_id=%s ORDER BY name ASC", (category_id,))
 
     if not category:
         messages.error(request, "Category not found.")
         return redirect("products")
+
+    # Vendors can only access categories where they have brands
+    if not admin["is_superadmin"]:
+        has_brand = db.selectone(
+            "SELECT id FROM brands WHERE category_id=%s AND admin_id=%s LIMIT 1",
+            (category_id, admin_id)
+        )
+        if not has_brand:
+            messages.error(request, "You don't have access to this category.")
+            return redirect("products")
+
+    brands = db.selectall("SELECT * FROM brands WHERE category_id=%s AND admin_id=%s ORDER BY name ASC", (category_id, admin_id))
 
     page = int(request.GET.get("page", "1") or 1)
     limit = 10
@@ -2868,21 +2999,25 @@ def add_products(request, category_id):
     category = db.selectone("SELECT * FROM categories WHERE id=%s", (category_id,))
     subcategories = db.selectall("SELECT * FROM subcategories WHERE category_id=%s ORDER BY name ASC", (category_id,))
 
-    # ✅ Filter brands based on admin
-    if admin["is_superadmin"]:
-        brands = db.selectall(
-            "SELECT * FROM brands WHERE category_id=%s AND admin_id=%s ORDER BY name ASC",
-            (category_id, admin_id)
-        )
-    else:
-        brands = db.selectall(
-            "SELECT * FROM brands WHERE category_id=%s AND admin_id=%s ORDER BY name ASC",
-            (category_id, admin_id)
-        )
-
     if not category:
         messages.error(request, "Invalid category.")
         return redirect("products")
+
+    # Vendors can only access categories where they have brands
+    if not admin["is_superadmin"]:
+        has_brand = db.selectone(
+            "SELECT id FROM brands WHERE category_id=%s AND admin_id=%s LIMIT 1",
+            (category_id, admin_id)
+        )
+        if not has_brand:
+            messages.error(request, "You don't have access to this category.")
+            return redirect("products")
+
+    # ✅ Filter brands based on admin
+    brands = db.selectall(
+        "SELECT * FROM brands WHERE category_id=%s AND admin_id=%s ORDER BY name ASC",
+        (category_id, admin_id)
+    )
 
     # ✅ UPDATED — FIX for plan_limit int conversion
     if admin["is_superadmin"]:
@@ -4178,52 +4313,70 @@ def order_list(request):
             messages.success(request, f"Order #{order_id} updated to {new_status}.")
             return redirect("order-list")
 
-    # ✅ Fetch orders belonging to this admin’s brands
-    orders = db.selectall("""
-        SELECT 
+    # ✅ Fetch orders - superadmin sees all, vendors see only their products' orders
+    order_base_sql = """
+        SELECT
             o.id AS order_id,
-            o.total_amount, 
+            o.total_amount,
             o.payment_status,
-            o.payment_method, 
+            o.payment_method,
             o.created_at,
             o.address_id,
-            u.first_name, 
-            u.last_name, 
-
-            -- fetch delivery address fields
+            u.first_name,
+            u.last_name,
             (SELECT a.first_name FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_first,
             (SELECT a.last_name FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_last,
             (SELECT a.phone FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_phone,
             (SELECT a.address_line1 FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_line1,
             (SELECT a.address_line2 FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_line2,
             (SELECT a.city FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_city,
-            (SELECT a.state	FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_state,
+            (SELECT a.state FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_state,
             (SELECT a.country FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_country,
             (SELECT a.zip_code FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_zip,
-            (SELECT a.phone FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_phone,
             (SELECT status FROM order_tracking WHERE order_id=o.id ORDER BY updated_at DESC LIMIT 1) AS current_status
         FROM orders o
         JOIN users u ON o.user_id=u.id
         JOIN products p ON o.product_id=p.id
-        WHERE p.admin_id=%s AND o.admin_deleted=0
-        GROUP BY o.id
-        ORDER BY o.created_at DESC
-    """, (admin_id,))
+    """
+    if admin["is_superadmin"]:
+        orders = db.selectall(order_base_sql + """
+            WHERE o.admin_deleted=0
+            GROUP BY o.id
+            ORDER BY o.created_at DESC
+        """)
+    else:
+        orders = db.selectall(order_base_sql + """
+            WHERE p.admin_id=%s AND o.admin_deleted=0
+            GROUP BY o.id
+            ORDER BY o.created_at DESC
+        """, (admin_id,))
 
-
-    # ✅ Add product list for each order (this admin's brand only)
+    # ✅ Add product list for each order
     for order in orders:
-        items = db.selectall("""
-            SELECT 
-                p.title AS product_title,
-                p.price, p.sale_price,
-                b.name AS brand_name,
-                (SELECT image FROM product_images WHERE product_id=p.id LIMIT 1) AS product_image
-            FROM orders o
-            JOIN products p ON o.product_id=p.id
-            JOIN brands b ON p.brand_id=b.id
-            WHERE o.id=%s AND p.admin_id=%s
-        """, (order["order_id"], admin_id))
+        if admin["is_superadmin"]:
+            items = db.selectall("""
+                SELECT
+                    p.title AS product_title,
+                    p.price, p.sale_price,
+                    b.name AS brand_name,
+                    (SELECT image FROM product_images WHERE product_id=p.id LIMIT 1) AS product_image
+                FROM orders o
+                JOIN products p ON o.product_id=p.id
+                LEFT JOIN brands b ON p.brand_id=b.id
+                WHERE o.id=%s
+            """, (order["order_id"],))
+        else:
+            items = db.selectall("""
+                SELECT
+                    p.title AS product_title,
+                    p.price, p.sale_price,
+                    b.name AS brand_name,
+                    (SELECT image FROM product_images WHERE product_id=p.id LIMIT 1) AS product_image
+                FROM orders o
+                JOIN products p ON o.product_id=p.id
+                LEFT JOIN brands b ON p.brand_id=b.id
+                WHERE o.id=%s AND p.admin_id=%s
+            """, (order["order_id"], admin_id))
         order["items"] = items
 
     status_list = ['Order Placed', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled']

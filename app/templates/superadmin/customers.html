@@ -31,6 +31,7 @@
                 <th>Phone</th>
                 <th>Address</th>
                 <th>Joined</th>
+                <th>VIP</th>
               </tr>
             </thead>
             <tbody>
@@ -47,9 +48,15 @@
                 <td>{{ u.phone|default:"—" }}</td>
                 <td>{{ u.address|default:"—" }}</td>
                 <td>{{ u.created_at|date:"M d, Y" }}</td>
+                <td>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input toggle-vip" type="checkbox" data-user-id="{{ u.id }}"
+                      {% if u.is_vip %}checked{% endif %}>
+                  </div>
+                </td>
               </tr>
               {% empty %}
-              <tr><td colspan="5" class="text-center py-4 text-muted">No registered users found.</td></tr>
+              <tr><td colspan="6" class="text-center py-4 text-muted">No registered users found.</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -69,6 +76,30 @@
     <div class="text-center py-5 text-muted">Select a customer to view details</div>
   </div>
 </div>
+
+<!-- VIP Toggle Script -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const csrfToken = '{{ csrf_token }}';
+  document.querySelectorAll(".toggle-vip").forEach(toggle => {
+    toggle.addEventListener("change", function() {
+      const userId = this.dataset.userId;
+      fetch(`/admin-home/toggle-vip/${userId}/`, {
+        method: "POST",
+        headers: { "X-CSRFToken": csrfToken, "Content-Type": "application/json" }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status !== "success") {
+          alert(data.message || "Failed to update VIP status.");
+          this.checked = !this.checked;
+        }
+      })
+      .catch(() => { alert("Error updating VIP status."); this.checked = !this.checked; });
+    });
+  });
+});
+</script>
 
 <!-- Script to Load User Details Dynamically -->
 <script>

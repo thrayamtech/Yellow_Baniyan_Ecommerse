@@ -11,6 +11,8 @@ urlpatterns = [
     path('signup/', views.signup, name='signup'),
     path('userlogin/', views.userlogin, name='userlogin'),
     path('userlogout/', views.userlogout, name='userlogout'),
+    path('forgot-password/', views.user_forgot_password, name='user-forgot-password'),
+    path('reset-verify/', views.user_reset_verify, name='user-reset-verify'),
     path('user-categories', views.user_categories, name='user-categories'),
     path('category/<int:category_id>/', views.category_products, name='category-products'),
     path('category-products/', views.category_products, name='category-products'),
@@ -149,6 +151,7 @@ urlpatterns = [
     # Admin User Details
     path("admin-home/customers/", views.customers, name="customers"),
     path("admin-home/user-details/<int:user_id>/", views.get_user_details, name="get-user-details"),
+    path("admin-home/toggle-vip/<int:user_id>/", views.toggle_vip, name="toggle-vip"),
 
     # Order PRoduct Urls
     path("admin-home/order/delete/", views.order_delete, name="order-delete"),
