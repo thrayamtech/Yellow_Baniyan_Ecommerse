@@ -710,10 +710,10 @@ def view_product(request, id):
         
     user_id = request.session.get("user_id")
     if user_id:
-        # Only count one view per user per product per day
+        # Only count one view per user per product
         already_viewed = db.selectone("""
             SELECT id FROM product_views
-            WHERE user_id=%s AND product_id=%s AND DATE(created_at)=CURDATE()
+            WHERE user_id=%s AND product_id=%s
         """, (user_id, id))
         if not already_viewed:
             db.insert("""
