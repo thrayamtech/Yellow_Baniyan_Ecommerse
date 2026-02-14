@@ -162,6 +162,7 @@
                                     <span class="text-dark">₹{{ product.sale_price|default:product.price }}</span>
                                     {% if product.sale_price and product.sale_price != product.price %}
                                     <span class="text-decoration-line-through text-muted">₹{{ product.price }}</span>
+                                    <small class="text-danger fw-semibold">{{ product.price|discount_percent:product.sale_price }}% Off</small>
                                     {% endif %}
                                  </div>
 

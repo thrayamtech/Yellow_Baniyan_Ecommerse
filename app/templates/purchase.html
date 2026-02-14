@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load custom_tags %}
 {% block title %}Checkout | Buy Now{% endblock %}
 {% block content %}
 
@@ -51,6 +52,7 @@
                   {% if product.sale_price and product.sale_price != product.price %}
                   ₹{{ product.sale_price }}
                   <span class="text-decoration-line-through text-muted small">₹{{ product.price }}</span>
+                  <small class="text-danger fw-semibold">{{ product.price|discount_percent:product.sale_price }}% Off</small>
                   {% else %}
                   ₹{{ product.sale_price|default:product.price }}
                   {% endif %}

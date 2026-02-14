@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load custom_tags %}
 {% block title %}{{ brand.name }} - Products{% endblock %}
 {% block content %}
 <style>
@@ -165,6 +166,7 @@
                                         <span class="text-dark">₹{{ p.sale_price|default:p.price }}</span>
                                         {% if p.sale_price and p.sale_price != p.price %}
                                         <span class="text-decoration-line-through text-muted">₹{{ p.price }}</span>
+                                        <small class="text-danger fw-semibold">{{ p.price|discount_percent:p.sale_price }}% Off</small>
                                         {% endif %}
                                     </div>
                                     <div>

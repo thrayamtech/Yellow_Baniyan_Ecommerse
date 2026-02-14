@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load custom_tags %}
 {% block title %}{{ product.title }} | Product Details{% endblock %}
 
 {% block content %}
@@ -101,6 +102,7 @@
           {% if product.sale_price and product.sale_price != product.price %}
           <h4 class="text-dark me-3 mb-0">₹{{ product.sale_price }}</h4>
           <span class="text-decoration-line-through text-muted">₹{{ product.price }}</span>
+          <small class="text-danger fw-semibold ms-2">{{ product.price|discount_percent:product.sale_price }}% Off</small>
           {% else %}
           <h4 class="text-dark mb-0">₹{{ product.sale_price|default:product.price }}</h4>
           {% endif %}
@@ -272,6 +274,7 @@
                 <span class="text-dark fw-semibold">₹{{ r.sale_price|default:r.price }}</span>
                 {% if r.sale_price and r.sale_price != r.price %}
                 <span class="text-decoration-line-through text-muted small">₹{{ r.price }}</span>
+                <small class="text-danger fw-semibold">{{ r.price|discount_percent:r.sale_price }}% Off</small>
                 {% endif %}
               </div>
             </div>

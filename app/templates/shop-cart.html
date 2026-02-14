@@ -207,22 +207,14 @@
                   toast: true,
                   position: "top-end",
                   showConfirmButton: false,
-                  timer: 2500,
+                  timer: 1200,
                   timerProgressBar: true,
                   background: "#f8f9fa",
                   iconColor: "#198754"
                });
 
-               // 🧹 Remove from DOM instantly
-               document.getElementById(`cartItem${cartId}`).remove();
-
-               // 🧮 Update cart count badge
-               updateCartCount(-1);
-
-               // If cart empty → refresh for empty message
-               if (document.querySelectorAll('[id^="cartItem"]').length === 0) {
-                  setTimeout(() => location.reload(), 1200);
-               }
+               // Reload page to recalculate totals
+               setTimeout(() => location.reload(), 1200);
             } else {
                Swal.fire({
                   icon: "error",

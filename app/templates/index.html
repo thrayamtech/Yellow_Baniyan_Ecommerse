@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_tags %}
 {% block title %} Yellow Banyan - Home {% endblock %}
 {% block content %}
 <main>
@@ -188,6 +189,7 @@
                 <span class="text-dark">₹{{ product.sale_price|default:product.price }}</span>
                 {% if product.sale_price and product.sale_price != product.price %}
                 <span class="text-muted text-decoration-line-through">₹{{ product.price }}</span>
+                <small class="text-danger fw-semibold">{{ product.price|discount_percent:product.sale_price }}% Off</small>
                 {% endif %}
               </div>
               <a href="{% url 'view-product' product.id %}" class="btn btn-sm btn-primary">

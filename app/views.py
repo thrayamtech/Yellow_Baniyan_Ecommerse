@@ -1683,6 +1683,9 @@ def demo_payment(request, product_id):
 
     issue_rewards_from_active_template(user_id, amount)
 
+    # Remove this product from cart if it exists there
+    db.delete("DELETE FROM cart WHERE user_id=%s AND product_id=%s", (user_id, product_id))
+
     messages.success(
         request,
         f"✅ Order placed! You used {discount} coins and earned {earned} new SuperCoins.",
@@ -2172,8 +2175,6 @@ def add_carousel_image(request):
         description = request.POST.get("description", "").strip()
         page_link = request.POST.get("page_link", "").strip()
         offer_text = request.POST.get("offer_text", "").strip()
-        title_color = request.POST.get("title_color", "#000000")
-        description_color = request.POST.get("description_color", "#333333")
         image_file = request.FILES.get("image")
 
         # ---------- IMAGE VALIDATION ----------
@@ -2228,9 +2229,9 @@ def add_carousel_image(request):
 
         # ✅ Save record
         db.insert("""
-            INSERT INTO carousel_images (title, description, image, page_link, offer_text, title_color, description_color)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (carousel_name, description, image_path, page_link, offer_text, title_color, description_color))
+            INSERT INTO carousel_images (title, description, image, page_link, offer_text)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (carousel_name, description, image_path, page_link, offer_text))
 
         messages.success(request, f"Carousel '{carousel_name}' added successfully!")
         return redirect("carousel-images")
@@ -2292,8 +2293,6 @@ def edit_carousel(request, id):
         description = request.POST.get("description", "").strip()
         page_link = request.POST.get("page_link", "").strip()
         offer_text = request.POST.get("offer_text", "").strip()
-        title_color = request.POST.get("title_color", carousel["title_color"])
-        description_color = request.POST.get("description_color", carousel["description_color"])
         image_file = request.FILES.get("image")
 
         image_path = carousel["image"]
@@ -2346,9 +2345,9 @@ def edit_carousel(request, id):
         # ✅ Use plain triple-quoted string, no f-string
         db.update("""
             UPDATE carousel_images
-            SET title=%s, description=%s, image=%s, page_link=%s, offer_text=%s, title_color=%s, description_color=%s
+            SET title=%s, description=%s, image=%s, page_link=%s, offer_text=%s
             WHERE id=%s
-        """, (title, description, image_path, page_link, offer_text, title_color, description_color, id))
+        """, (title, description, image_path, page_link, offer_text, id))
 
         messages.success(request, "Carousel updated successfully!")
         return redirect("carousel-images")
