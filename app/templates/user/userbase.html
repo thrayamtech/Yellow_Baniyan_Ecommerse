@@ -162,7 +162,8 @@
 
 <body>
    <!-- navigation -->
-   <header class="py-lg-5 py-4 px-0 border-bottom border-bottom-lg-0">
+   <div id="stickyHeader" style="position: sticky; top: 0; z-index: 1030; background: #fff; transition: box-shadow 0.3s;">
+   <header class="py-lg-3 py-3 px-0 border-bottom border-bottom-lg-0">
       <div class="container-fluid">
          <div class="row w-100 align-items-center g-0 gx-lg-3">
             <div class="col-xxl-9 col-lg-8">
@@ -644,6 +645,7 @@
          </div>
       </div>
    </nav>
+   </div><!-- end stickyHeader -->
 
    <!-- Modal -->
    <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
@@ -1120,6 +1122,18 @@
          }
       });
    </script>
+
+<!-- Sticky header shadow on scroll -->
+<script>
+window.addEventListener('scroll', function() {
+   const header = document.getElementById('stickyHeader');
+   if (window.scrollY > 10) {
+      header.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+   } else {
+      header.style.boxShadow = 'none';
+   }
+});
+</script>
 
 </body>
 

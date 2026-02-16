@@ -9,28 +9,25 @@
          <div class="hero-slider">
             <!-- Slider Start -->
             {% for c in carousels %}
-            <div style="
-       background: url('/media/{{ c.image }}') no-repeat center center / cover;
-       border-radius: 0.5rem;">
-   <div class="ps-lg-12 py-lg-16 col-xxl-5 col-md-7 py-14 px-8 text-xs-center">
-                  {% if c.offer_text %}
-                  <span class="badge text-bg-warning">{{ c.offer_text }}</span>
-                  {% endif %}
-                  <h2 class="display-5 fw-bold mt-4"
-    style="color: {{ c.title_color }};">
-   {{ c.title }}
-</h2>
-
-<p class="lead"
-   style="color: {{ c.description_color }};">
-   {{ c.description }}
-</p>
-                  {% if c.page_link %}
-                  <a href="{{ c.page_link }}" class="btn btn-dark mt-3">
-                           Shop Now
-                           <i class="feather-icon icon-arrow-right ms-1"></i>
-                        </a>
-                  {% endif %}
+            <div class="carousel-slide">
+               <img src="/media/{{ c.image }}" alt="{{ c.title }}">
+               <div class="carousel-overlay">
+                  <div class="carousel-text">
+                     {% if c.offer_text %}
+                     <span class="badge text-bg-warning">{{ c.offer_text }}</span>
+                     {% endif %}
+                     {% if c.title %}
+                     <h2 class="fw-bold mt-2">{{ c.title }}</h2>
+                     {% endif %}
+                     {% if c.description %}
+                     <p class="lead mb-2">{{ c.description }}</p>
+                     {% endif %}
+                     {% if c.page_link %}
+                     <a href="{{ c.page_link }}" class="btn btn-dark mt-1">
+                        Shop Now <i class="feather-icon icon-arrow-right ms-1"></i>
+                     </a>
+                     {% endif %}
+                  </div>
                </div>
             </div>
             {% endfor %}
