@@ -768,6 +768,7 @@ def view_product(request, id):
         "avg_rating": avg_rating,
         "total_reviews": total_reviews,
         "cart_count": get_cart_count(request.session["user_id"]) if "user_id" in request.session else 0,
+        "wishlist_count": get_wishlist_count(request.session["user_id"]) if "user_id" in request.session else 0,
     })
     
     
@@ -1036,6 +1037,8 @@ def brand_products(request, brand_id):
         "total": len(products) if products else 0,
         "active_category": active_category,
         "active_subcategory": active_subcategory,
+        "cart_count": get_cart_count(user_id) if user_id else 0,
+        "wishlist_count": get_wishlist_count(user_id) if user_id else 0,
     })
     
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)

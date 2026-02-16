@@ -162,7 +162,7 @@
 
 <body>
    <!-- navigation -->
-   <div id="stickyHeader" style="position: sticky; top: 0; z-index: 1030; background: #fff; transition: box-shadow 0.3s;">
+   <div id="stickyHeader" style="position: fixed; top: 0; left: 0; right: 0; z-index: 1030; background: #fff; transition: box-shadow 0.3s;">
    <header class="py-lg-3 py-3 px-0 border-bottom border-bottom-lg-0">
       <div class="container-fluid">
          <div class="row w-100 align-items-center g-0 gx-lg-3">
@@ -1123,16 +1123,23 @@
       });
    </script>
 
-<!-- Sticky header shadow on scroll -->
+<!-- Sticky header: set body padding + shadow on scroll -->
 <script>
-window.addEventListener('scroll', function() {
+(function() {
    const header = document.getElementById('stickyHeader');
-   if (window.scrollY > 10) {
-      header.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-   } else {
-      header.style.boxShadow = 'none';
+   function adjustPadding() {
+      document.body.style.paddingTop = header.offsetHeight + 'px';
    }
-});
+   adjustPadding();
+   window.addEventListener('resize', adjustPadding);
+   window.addEventListener('scroll', function() {
+      if (window.scrollY > 10) {
+         header.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+      } else {
+         header.style.boxShadow = 'none';
+      }
+   });
+})();
 </script>
 
 </body>
