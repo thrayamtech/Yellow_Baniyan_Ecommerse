@@ -54,6 +54,12 @@ def get_wishlist_count(user_id):
     )
     return result["count"] if result else 0
 
+def is_user_vip(user_id):
+    """Check if user has VIP status"""
+    if not user_id:
+        return False
+    user = db.selectone("SELECT is_vip FROM users WHERE id=%s", (user_id,))
+    return bool(user and user.get("is_vip"))
 
 
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
@@ -62,25 +68,31 @@ def index(request):
     categories = db.selectall("SELECT * FROM categories ORDER BY id DESC")
     brands = db.selectall("SELECT * FROM brands WHERE is_active=1 ORDER BY id DESC")
 
+    user_id = request.session.get("user_id")
+    vip = is_user_vip(user_id)
+    vip_filter = "" if vip else "AND (p.is_vip = 0 OR p.is_vip IS NULL)"
+
     # fetch top 8 most viewed, then fallback to latest 8 if none
-    most_viewed = db.selectall("""
+    most_viewed = db.selectall(f"""
         SELECT p.id, p.title, p.price, p.sale_price, p.stock,
             (SELECT image FROM product_images WHERE product_id=p.id LIMIT 1) AS main_image,
             COUNT(DISTINCT v.user_id) AS view_count
         FROM product_views v
         JOIN products p ON v.product_id = p.id
         WHERE p.approved=1 AND p.pending_approval=0 AND p.disapproved=0 AND p.is_active=1 AND p.stock > 0
+        {vip_filter}
         GROUP BY p.id
         ORDER BY view_count DESC
         LIMIT 8
     """)
 
     if not most_viewed:
-        most_viewed = db.selectall("""
+        most_viewed = db.selectall(f"""
             SELECT p.id, p.title, p.price, p.sale_price, p.stock,
                 (SELECT image FROM product_images WHERE product_id=p.id LIMIT 1) AS main_image
             FROM products p
             WHERE p.approved=1 AND p.pending_approval=0 AND p.disapproved=0 AND p.is_active=1 AND p.stock > 0
+            {vip_filter}
             ORDER BY p.id DESC
             LIMIT 8
         """)
@@ -122,6 +134,8 @@ def user_categories(request):
 def shop_all(request):
     """Display all products with category + subcategory sidebar"""
     user_id = request.session.get("user_id")
+    vip = is_user_vip(user_id)
+    vip_filter = "" if vip else "AND (p.is_vip = 0 OR p.is_vip IS NULL)"
 
     categories = db.selectall("SELECT * FROM categories ORDER BY name ASC")
     subcategories = db.selectall("SELECT * FROM subcategories ORDER BY name ASC")
@@ -131,8 +145,8 @@ def shop_all(request):
     cat_id = request.GET.get("cat")
     sub_id = request.GET.get("sub")
 
-    query = """
-        SELECT p.*, 
+    query = f"""
+        SELECT p.*,
                c.name AS category_name,
                s.name AS subcategory_name,
                b.name AS brand_name,
@@ -142,7 +156,8 @@ def shop_all(request):
         LEFT JOIN subcategories s ON p.subcategory_id=s.id
         LEFT JOIN brands b ON p.brand_id=b.id
         WHERE p.approved=1 AND p.pending_approval=0 AND p.disapproved=0 AND p.is_active=1 AND p.stock > 0
-  AND (b.is_active=1 OR b.is_active IS NULL)
+        AND (b.is_active=1 OR b.is_active IS NULL)
+        {vip_filter}
     """
 
     params = []
@@ -176,10 +191,14 @@ def category_products(request, category_id):
         messages.error(request, "Category not found.")
         return redirect("index")
 
+    user_id = request.session.get("user_id")
+    vip = is_user_vip(user_id)
+    vip_filter = "" if vip else "AND (p.is_vip = 0 OR p.is_vip IS NULL)"
+
     # ✅ Fetch subcategories for sidebar filter
     subcategories = db.selectall("SELECT * FROM subcategories WHERE category_id=%s ORDER BY name ASC", (category_id,))
     brands = db.selectall("SELECT * FROM brands ORDER BY name ASC")
-    
+
     # ✅ Sorting logic
     sort = request.GET.get("sort", "")
     order_by = "p.id DESC"
@@ -203,8 +222,8 @@ def category_products(request, category_id):
 
     # ✅ Count total products
     count_row = db.selectone(f"""
-        SELECT COUNT(*) AS count 
-        FROM products p 
+        SELECT COUNT(*) AS count
+        FROM products p
         LEFT JOIN brands b ON p.brand_id = b.id
         WHERE p.category_id=%s
         AND p.approved=1
@@ -213,6 +232,7 @@ def category_products(request, category_id):
         AND p.is_active=1
         AND p.stock > 0
         AND (b.is_active=1 OR b.is_active IS NULL)
+        {vip_filter}
         {subcategory_filter}
     """, params)
 
@@ -236,6 +256,7 @@ def category_products(request, category_id):
         AND p.is_active=1
         AND p.stock > 0
         AND (b.is_active=1 OR b.is_active IS NULL)
+        {vip_filter}
         {subcategory_filter}
         ORDER BY {order_by}
         LIMIT %s OFFSET %s
@@ -431,6 +452,10 @@ def add_to_cart(request, product_id):
     product = db.selectone("SELECT * FROM products WHERE id=%s", (product_id,))
     if not product:
         return JsonResponse({"status": "error", "message": "Product not found."})
+
+    # Block non-VIP users from adding VIP products
+    if product.get("is_vip") and not is_user_vip(user_id):
+        return JsonResponse({"status": "error", "message": "This product is available for VIP members only."})
 
     # ✅ Check if already in cart → update qty
     existing = db.selectone(
@@ -691,13 +716,16 @@ def remove_from_wishlist(request, product_id):
     return JsonResponse({"status": "removed", "message": "Removed from your wishlist."})
 
 def view_product(request, id):
+    user_id = request.session.get("user_id")
+    vip = is_user_vip(user_id)
+
     product = db.selectone("""
-    SELECT p.*, 
-           c.name AS category_name, 
+    SELECT p.*,
+           c.name AS category_name,
            s.name AS subcategory_name,
            b.name AS brand_name,
            a.username AS admin_name,
-           a.organization AS admin_org,        -- ✅ added line
+           a.organization AS admin_org,
            (SELECT image FROM product_images WHERE product_id = p.id LIMIT 1) AS main_image
     FROM products p
     LEFT JOIN categories c ON p.category_id = c.id
@@ -707,6 +735,10 @@ def view_product(request, id):
     WHERE p.id=%s
 """, (id,))
 
+    # Block non-VIP users from viewing VIP products
+    if product and product.get("is_vip") and not vip:
+        messages.error(request, "This product is available for VIP members only.")
+        return redirect("index")
 
     images = db.selectall("SELECT * FROM product_images WHERE product_id=%s", (id,))
     attributes = db.selectall("SELECT * FROM product_attributes WHERE product_id=%s", (id,))
@@ -715,8 +747,6 @@ def view_product(request, id):
     for i in range(0, len(attributes), 2):
         pair = attributes[i:i+2]
         grouped_attrs.append(pair)
-        
-    user_id = request.session.get("user_id")
     if user_id:
         # Only count one view per user per product
         already_viewed = db.selectone("""
@@ -731,8 +761,9 @@ def view_product(request, id):
     
 
     # ✅ Related products (same category, exclude this one)
-    related_products = db.selectall("""
-        SELECT p.*, 
+    vip_filter = "" if vip else "AND (p.is_vip = 0 OR p.is_vip IS NULL)"
+    related_products = db.selectall(f"""
+        SELECT p.*,
                (SELECT image FROM product_images WHERE product_id=p.id LIMIT 1) AS main_image,
                c.name AS category_name,
                s.name AS subcategory_name,
@@ -742,6 +773,7 @@ def view_product(request, id):
         LEFT JOIN subcategories s ON p.subcategory_id=s.id
         LEFT JOIN brands b ON p.brand_id=b.id
         WHERE p.category_id=%s AND p.id != %s AND p.approved=1 AND p.stock > 0
+        {vip_filter}
         LIMIT 4
     """, (product["category_id"], id))
     
@@ -983,11 +1015,13 @@ def brand_products(request, brand_id):
         return redirect("index")
 
     user_id = request.session.get("user_id")
+    vip = is_user_vip(user_id)
+    vip_filter = "" if vip else "AND (p.is_vip = 0 OR p.is_vip IS NULL)"
+
     if user_id:
         db.insert("""
             INSERT INTO brand_visits (user_id, brand_id) VALUES (%s, %s)
         """, (user_id, brand_id))
-
 
     # ✅ Sidebar data
     categories = db.selectall("SELECT * FROM categories ORDER BY name ASC")
@@ -998,10 +1032,10 @@ def brand_products(request, brand_id):
     subcategory_filter = request.GET.get("sub")
 
     # ✅ Build base SQL
-    sql = """
-        SELECT 
-            p.*, 
-            c.name AS category_name, 
+    sql = f"""
+        SELECT
+            p.*,
+            c.name AS category_name,
             s.name AS subcategory_name,
             b.name AS brand_name,
             (SELECT image FROM product_images WHERE product_id = p.id LIMIT 1) AS main_image
@@ -1014,6 +1048,7 @@ def brand_products(request, brand_id):
         AND p.is_active = 1
         AND p.stock > 0
         AND (b.is_active = 1 OR b.is_active IS NULL)
+        {vip_filter}
     """
     params = [brand_id]
 
@@ -1440,6 +1475,10 @@ def search_products(request):
     limit = 30
     offset = (page - 1) * limit
 
+    user_id = request.session.get("user_id")
+    vip = is_user_vip(user_id)
+    vip_filter = "" if vip else "AND (p.is_vip = 0 OR p.is_vip IS NULL)"
+
     products = []
     total = 0
     total_pages = 1
@@ -1447,7 +1486,7 @@ def search_products(request):
 
     if query:
         # ✅ Count total
-        count_row = db.selectone("""
+        count_row = db.selectone(f"""
             SELECT COUNT(*) AS count
             FROM products p
             WHERE p.title LIKE %s
@@ -1455,16 +1494,17 @@ def search_products(request):
               AND p.pending_approval = 0
               AND p.disapproved = 0
               AND p.stock > 0
+              {vip_filter}
         """, [f'%{query}%'])
         total = count_row["count"] if count_row else 0
         total_pages = ceil(total / limit) if total > 0 else 1
 
         # ✅ Fetch paginated data
         products = db.selectall(f"""
-            SELECT 
-                p.id, 
-                p.title AS name, 
-                p.price, 
+            SELECT
+                p.id,
+                p.title AS name,
+                p.price,
                 p.sale_price,
                 p.stock,
                 (SELECT image FROM product_images WHERE product_id = p.id LIMIT 1) AS image
@@ -1474,6 +1514,7 @@ def search_products(request):
               AND p.pending_approval = 0
               AND p.disapproved = 0
               AND p.stock > 0
+              {vip_filter}
             ORDER BY p.id DESC
             LIMIT %s OFFSET %s
         """, [f'%{query}%', limit, offset])
@@ -1509,6 +1550,11 @@ def buy_now(request, product_id):
     """, (product_id,))
     if not product:
         messages.error(request, "Product not found.")
+        return redirect("index")
+
+    # Block non-VIP users from buying VIP products
+    if product.get("is_vip") and not is_user_vip(user_id):
+        messages.error(request, "This product is available for VIP members only.")
         return redirect("index")
 
     # ✅ Fetch user addresses
@@ -4306,29 +4352,6 @@ def order_list(request):
     admin_id = request.session["admin_id"]
     admin = db.selectone("SELECT * FROM adminusers WHERE id=%s", (admin_id,))
 
-    # ✅ Update tracking status (for this admin's brand products)
-    if request.method == "POST" and request.POST.get("status"):
-        order_id = request.POST.get("order_id")
-        new_status = request.POST.get("status")
-        if order_id and new_status:
-            check = db.selectone("""
-                SELECT o.id 
-                FROM orders o
-                JOIN products p ON o.product_id = p.id
-                WHERE o.id=%s AND p.admin_id=%s
-            """, (order_id, admin_id))
-            if not check:
-                messages.warning(request, "You cannot update another admin’s order.")
-                return redirect("order-list")
-
-            existing = db.selectone("SELECT * FROM order_tracking WHERE order_id=%s", (order_id,))
-            if existing:
-                db.update("UPDATE order_tracking SET status=%s, updated_at=NOW() WHERE order_id=%s", (new_status, order_id))
-            else:
-                db.insert("INSERT INTO order_tracking (order_id, status, updated_at) VALUES (%s,%s,NOW())", (order_id, new_status))
-            messages.success(request, f"Order #{order_id} updated to {new_status}.")
-            return redirect("order-list")
-
     # ✅ Fetch orders grouped by order_group (cart orders clubbed together)
     # For old orders without order_group, each order is its own group
     order_base_sql = """
@@ -4411,12 +4434,10 @@ def order_list(request):
             order["addr_country"] = addr.get("country", "")
             order["addr_zip"] = addr.get("zip_code", "")
 
-    status_list = ['Order Placed', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled']
-
     return render(
         request,
         "superadmin/order-list.html",
-        {"orders": orders, "status_list": status_list, "admin": admin}
+        {"orders": orders, "admin": admin}
     )
 
 

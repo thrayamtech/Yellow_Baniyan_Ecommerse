@@ -119,30 +119,14 @@
                 {% for item in order.items %}
                 <div class="col-md-6 mb-3">
                   <div class="card border-light shadow-sm">
-                    <div class="card-body d-flex align-items-center justify-content-between">
-                      <div class="d-flex align-items-center">
-                        <img src="/media/{{ item.product_image }}" class="rounded me-3"
-                          style="width:60px; height:60px; object-fit:cover;">
-                        <div>
-                          <h6 class="mb-0">{{ item.product_title }}</h6>
-                          <small class="text-muted">{{ item.brand_name }}</small><br>
-                          <small>₹{{ item.sale_price|default:item.price }}</small>
-                        </div>
+                    <div class="card-body d-flex align-items-center">
+                      <img src="/media/{{ item.product_image }}" class="rounded me-3"
+                        style="width:60px; height:60px; object-fit:cover;">
+                      <div>
+                        <h6 class="mb-0">{{ item.product_title }}</h6>
+                        <small class="text-muted">{{ item.brand_name }}</small><br>
+                        <small>₹{{ item.sale_price|default:item.price }}</small>
                       </div>
-                    </div>
-                    <div class="card-footer bg-transparent border-top pt-2">
-                      <form method="post" action="{% url 'order-list' %}">
-                        {% csrf_token %}
-                        <input type="hidden" name="order_id" value="{{ item.order_id }}">
-                        <div class="d-flex align-items-center justify-content-between">
-                          <label class="text-muted small mb-0 me-2">Status:</label>
-                          <select name="status" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-                            {% for s in status_list %}
-                            <option value="{{ s }}" {% if order.current_status == s %}selected{% endif %}>{{ s }}</option>
-                            {% endfor %}
-                          </select>
-                        </div>
-                      </form>
                     </div>
                   </div>
                 </div>

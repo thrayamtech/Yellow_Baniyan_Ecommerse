@@ -67,51 +67,14 @@
             <!-- Sidebar -->
             <aside class="col-lg-3 col-md-4 mb-4">
                 <h5 class="mb-3">Categories</h5>
-                <div class="accordion" id="brandCategoryAccordion">
+                <div class="list-group list-group-flush">
                     {% for cat in categories %}
-                    <div class="accordion-item mb-2 border-0">
-                        <h2 class="accordion-header" id="heading{{ cat.id }}">
-                            <button class="accordion-button {% if not is_active %}collapsed{% endif %}" type="button"
-                                data-bs-toggle="collapse" data-bs-target="#collapse{{ cat.id }}" {% if is_active %}
-                                aria-expanded="true" {% else %}aria-expanded="false" {% endif %}
-                                aria-controls="collapse{{ cat.id }}">
-                                {{ cat.name }}
-                            </button>
-                        </h2>
-                        <div id="collapse{{ cat.id }}"
-                            class="accordion-collapse collapse {% if is_active %}show{% endif %}"
-                            aria-labelledby="heading{{ cat.id }}" data-bs-parent="#brandCategoryAccordion">
-
-                            <div class="accordion-body py-2">
-                                <ul class="list-unstyled ms-2">
-                                    <li class="mb-1">
-                                        <a href="?category={{ cat.id }}"
-                                            class="text-decoration-none small {% if active_category and active_category.id|stringformat:'s' == cat.id|stringformat:'s' and not active_subcategory %}fw-bold text-primary{% else %}text-dark{% endif %}">
-                                            All {{ cat.name }}
-                                        </a>
-                                    </li>
-                                    {% for sub in subcategories %}
-                                    {% if sub.category_id == cat.id %}
-                                    <li class="mb-1">
-                                        <a href="?category={{ cat.id }}&sub={{ sub.id }}"
-                                            class="text-decoration-none small {% if active_subcategory and active_subcategory.id == sub.id %}fw-bold text-primary{% else %}text-muted{% endif %}">
-                                            {{ sub.name }}
-                                        </a>
-                                    </li>
-                                    {% endif %}
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
+                    <a href="{% url 'category-products' cat.id %}"
+                       class="list-group-item list-group-item-action border-0 rounded-2 mb-1 small">
+                        {{ cat.name }}
+                    </a>
                     {% endfor %}
                 </div>
-
-                {% if active_category or active_subcategory %}
-                <a href="{% url 'brand-products' brand.id %}" class="btn btn-outline-secondary btn-sm mt-3 w-100">
-                    <i class="bi bi-x-circle me-1"></i> Clear Filters
-                </a>
-                {% endif %}
             </aside>
 
  
