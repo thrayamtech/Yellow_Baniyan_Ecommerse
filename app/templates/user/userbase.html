@@ -625,11 +625,6 @@
                      <!-- <li class="nav-item">
                         <a class="nav-link" href="{% url 'contact' %}">Contact Us</a>
                      </li> -->
-                     {% if request.session.user_id %}
-                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'profile' %}">My Account</a>
-                     </li>
-                     {% endif %}
                      {% if not request.session.user_id %}
                      <li class="nav-item">
                         <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#userModal">
