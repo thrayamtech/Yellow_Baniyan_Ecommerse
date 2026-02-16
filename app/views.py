@@ -69,7 +69,7 @@ def index(request):
             COUNT(DISTINCT v.user_id) AS view_count
         FROM product_views v
         JOIN products p ON v.product_id = p.id
-        WHERE p.approved=1 AND p.pending_approval=0 AND p.disapproved=0 AND p.is_active=1
+        WHERE p.approved=1 AND p.pending_approval=0 AND p.disapproved=0 AND p.is_active=1 AND p.stock > 0
         GROUP BY p.id
         ORDER BY view_count DESC
         LIMIT 8
@@ -80,7 +80,7 @@ def index(request):
             SELECT p.id, p.title, p.price, p.sale_price, p.stock,
                 (SELECT image FROM product_images WHERE product_id=p.id LIMIT 1) AS main_image
             FROM products p
-            WHERE p.approved=1 AND p.pending_approval=0 AND p.disapproved=0 AND p.is_active=1
+            WHERE p.approved=1 AND p.pending_approval=0 AND p.disapproved=0 AND p.is_active=1 AND p.stock > 0
             ORDER BY p.id DESC
             LIMIT 8
         """)
@@ -141,7 +141,7 @@ def shop_all(request):
         LEFT JOIN categories c ON p.category_id=c.id
         LEFT JOIN subcategories s ON p.subcategory_id=s.id
         LEFT JOIN brands b ON p.brand_id=b.id
-        WHERE p.approved=1 AND p.pending_approval=0 AND p.disapproved=0 AND p.is_active=1
+        WHERE p.approved=1 AND p.pending_approval=0 AND p.disapproved=0 AND p.is_active=1 AND p.stock > 0
   AND (b.is_active=1 OR b.is_active IS NULL)
     """
 
@@ -206,11 +206,12 @@ def category_products(request, category_id):
         SELECT COUNT(*) AS count 
         FROM products p 
         LEFT JOIN brands b ON p.brand_id = b.id
-        WHERE p.category_id=%s 
-        AND p.approved=1 
-        AND p.pending_approval=0 
-        AND p.disapproved=0 
+        WHERE p.category_id=%s
+        AND p.approved=1
+        AND p.pending_approval=0
+        AND p.disapproved=0
         AND p.is_active=1
+        AND p.stock > 0
         AND (b.is_active=1 OR b.is_active IS NULL)
         {subcategory_filter}
     """, params)
@@ -219,7 +220,7 @@ def category_products(request, category_id):
 
     # ✅ Fetch paginated products
     products = db.selectall(f"""
-        SELECT p.*, 
+        SELECT p.*,
             c.name AS category_name,
             s.name AS subcategory_name,
             b.name AS brand_name,
@@ -228,11 +229,12 @@ def category_products(request, category_id):
         LEFT JOIN categories c ON p.category_id=c.id
         LEFT JOIN subcategories s ON p.subcategory_id=s.id
         LEFT JOIN brands b ON p.brand_id=b.id
-        WHERE p.category_id=%s 
-        AND p.approved=1 
-        AND p.pending_approval=0 
-        AND p.disapproved=0 
+        WHERE p.category_id=%s
+        AND p.approved=1
+        AND p.pending_approval=0
+        AND p.disapproved=0
         AND p.is_active=1
+        AND p.stock > 0
         AND (b.is_active=1 OR b.is_active IS NULL)
         {subcategory_filter}
         ORDER BY {order_by}
@@ -557,6 +559,9 @@ def cart_demo_payment(request):
             (user_id, -discount, f"Used {discount} coins for cart discount"),
         )
 
+    # Get selected shipping address
+    address_id = request.POST.get("address_id")
+
     # Generate a group ID to link all items from this cart checkout
     order_group = f"GRP-{int(datetime.now().timestamp())}-{get_random_string(4)}"
 
@@ -566,9 +571,9 @@ def cart_demo_payment(request):
         total_item_price = item_price * item["quantity"]
 
         order_id = db.insert_return_id("""
-            INSERT INTO orders (user_id, product_id, total_amount, payment_status, created_at, order_group)
-            VALUES (%s, %s, %s, %s, NOW(), %s)
-        """, (user_id, item["product_id"], total_item_price, "success", order_group))
+            INSERT INTO orders (user_id, product_id, total_amount, payment_status, created_at, order_group, address_id)
+            VALUES (%s, %s, %s, %s, NOW(), %s, %s)
+        """, (user_id, item["product_id"], total_item_price, "success", order_group, address_id))
         order_ids.append(order_id)
 
     # ✅ Send combined HTML emails for all orders
@@ -736,7 +741,7 @@ def view_product(request, id):
         LEFT JOIN categories c ON p.category_id=c.id
         LEFT JOIN subcategories s ON p.subcategory_id=s.id
         LEFT JOIN brands b ON p.brand_id=b.id
-        WHERE p.category_id=%s AND p.id != %s AND p.approved=1
+        WHERE p.category_id=%s AND p.id != %s AND p.approved=1 AND p.stock > 0
         LIMIT 4
     """, (product["category_id"], id))
     
@@ -1004,9 +1009,10 @@ def brand_products(request, brand_id):
         LEFT JOIN categories c ON p.category_id = c.id
         LEFT JOIN subcategories s ON p.subcategory_id = s.id
         LEFT JOIN brands b ON p.brand_id = b.id
-        WHERE p.brand_id = %s 
-        AND p.approved = 1 
+        WHERE p.brand_id = %s
+        AND p.approved = 1
         AND p.is_active = 1
+        AND p.stock > 0
         AND (b.is_active = 1 OR b.is_active IS NULL)
     """
     params = [brand_id]
@@ -1444,10 +1450,11 @@ def search_products(request):
         count_row = db.selectone("""
             SELECT COUNT(*) AS count
             FROM products p
-            WHERE p.title LIKE %s 
+            WHERE p.title LIKE %s
               AND p.approved = 1
               AND p.pending_approval = 0
               AND p.disapproved = 0
+              AND p.stock > 0
         """, [f'%{query}%'])
         total = count_row["count"] if count_row else 0
         total_pages = ceil(total / limit) if total > 0 else 1
@@ -1462,11 +1469,11 @@ def search_products(request):
                 p.stock,
                 (SELECT image FROM product_images WHERE product_id = p.id LIMIT 1) AS image
             FROM products p
-            WHERE p.title LIKE %s 
-            
+            WHERE p.title LIKE %s
               AND p.approved = 1
               AND p.pending_approval = 0
               AND p.disapproved = 0
+              AND p.stock > 0
             ORDER BY p.id DESC
             LIMIT %s OFFSET %s
         """, [f'%{query}%', limit, offset])
@@ -1668,11 +1675,14 @@ def demo_payment(request, product_id):
             (user_id, -discount, f"Used {discount} coins for discount"),
         )
 
+    # Get selected shipping address
+    address_id = request.POST.get("address_id")
+
     order_group = f"GRP-{int(datetime.now().timestamp())}-{get_random_string(4)}"
     order_id = db.insert_return_id("""
-        INSERT INTO orders (user_id, product_id, total_amount, payment_status, created_at, order_group)
-        VALUES (%s, %s, %s, %s, NOW(), %s)
-    """, (user_id, product_id, amount, "success", order_group))
+        INSERT INTO orders (user_id, product_id, total_amount, payment_status, created_at, order_group, address_id)
+        VALUES (%s, %s, %s, %s, NOW(), %s, %s)
+    """, (user_id, product_id, amount, "success", order_group, address_id))
 
     # ✅ Send HTML order email (user + admin + superadmin)
     try:
@@ -4331,17 +4341,9 @@ def order_list(request):
             MIN(o.payment_method) AS payment_method,
             MIN(o.created_at) AS created_at,
             MIN(o.address_id) AS address_id,
+            MIN(o.user_id) AS user_id,
             u.first_name,
             u.last_name,
-            (SELECT a.first_name FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_first,
-            (SELECT a.last_name FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_last,
-            (SELECT a.phone FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_phone,
-            (SELECT a.address_line1 FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_line1,
-            (SELECT a.address_line2 FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_line2,
-            (SELECT a.city FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_city,
-            (SELECT a.state FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_state,
-            (SELECT a.country FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_country,
-            (SELECT a.zip_code FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_zip,
             (SELECT status FROM order_tracking WHERE order_id=MIN(o.id) ORDER BY updated_at DESC LIMIT 1) AS current_status
         FROM orders o
         JOIN users u ON o.user_id=u.id
@@ -4391,6 +4393,23 @@ def order_list(request):
                 WHERE o.id IN ({placeholders}) AND p.admin_id=%s
             """, tuple(oid_list) + (admin_id,))
         order["items"] = items
+
+        # Fetch shipping address: use stored address_id, fallback to user's default
+        addr = None
+        if order.get("address_id"):
+            addr = db.selectone("SELECT * FROM addresses WHERE id=%s", (order["address_id"],))
+        if not addr and order.get("user_id"):
+            addr = db.selectone("SELECT * FROM addresses WHERE user_id=%s AND is_default=TRUE LIMIT 1", (order["user_id"],))
+        if addr:
+            order["addr_first"] = addr.get("first_name", "")
+            order["addr_last"] = addr.get("last_name", "")
+            order["addr_phone"] = addr.get("phone", "")
+            order["addr_line1"] = addr.get("address_line1", "")
+            order["addr_line2"] = addr.get("address_line2", "")
+            order["addr_city"] = addr.get("city", "")
+            order["addr_state"] = addr.get("state", "")
+            order["addr_country"] = addr.get("country", "")
+            order["addr_zip"] = addr.get("zip_code", "")
 
     status_list = ['Order Placed', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled']
 
@@ -4459,7 +4478,7 @@ def track_order(request, order_id):
             (SELECT image FROM product_images WHERE product_id=p.id LIMIT 1) AS product_image
         FROM orders o
         JOIN products p ON o.product_id = p.id
-        LEFT JOIN addresses a ON a.user_id = o.user_id AND a.is_default = 1
+        LEFT JOIN addresses a ON a.id = COALESCE(o.address_id, (SELECT id FROM addresses WHERE user_id=o.user_id AND is_default=1 LIMIT 1))
         WHERE o.id=%s AND o.user_id=%s
     """, (order_id, user_id))
 
