@@ -557,15 +557,18 @@ def cart_demo_payment(request):
             (user_id, -discount, f"Used {discount} coins for cart discount"),
         )
 
+    # Generate a group ID to link all items from this cart checkout
+    order_group = f"GRP-{int(datetime.now().timestamp())}-{get_random_string(4)}"
+
     order_ids = []
     for item in items:
         item_price = item["sale_price"] or item["price"]
         total_item_price = item_price * item["quantity"]
 
         order_id = db.insert_return_id("""
-            INSERT INTO orders (user_id, product_id, total_amount, payment_status, created_at)
-            VALUES (%s, %s, %s, %s, NOW())
-        """, (user_id, item["product_id"], total_item_price, "success"))
+            INSERT INTO orders (user_id, product_id, total_amount, payment_status, created_at, order_group)
+            VALUES (%s, %s, %s, %s, NOW(), %s)
+        """, (user_id, item["product_id"], total_item_price, "success", order_group))
         order_ids.append(order_id)
 
     # ✅ Send combined HTML emails for all orders
@@ -1665,10 +1668,11 @@ def demo_payment(request, product_id):
             (user_id, -discount, f"Used {discount} coins for discount"),
         )
 
+    order_group = f"GRP-{int(datetime.now().timestamp())}-{get_random_string(4)}"
     order_id = db.insert_return_id("""
-        INSERT INTO orders (user_id, product_id, total_amount, payment_status, created_at)
-        VALUES (%s, %s, %s, %s, NOW())
-    """, (user_id, product_id, amount, "success"))
+        INSERT INTO orders (user_id, product_id, total_amount, payment_status, created_at, order_group)
+        VALUES (%s, %s, %s, %s, NOW(), %s)
+    """, (user_id, product_id, amount, "success", order_group))
 
     # ✅ Send HTML order email (user + admin + superadmin)
     try:
@@ -4315,15 +4319,18 @@ def order_list(request):
             messages.success(request, f"Order #{order_id} updated to {new_status}.")
             return redirect("order-list")
 
-    # ✅ Fetch orders - superadmin sees all, vendors see only their products' orders
+    # ✅ Fetch orders grouped by order_group (cart orders clubbed together)
+    # For old orders without order_group, each order is its own group
     order_base_sql = """
         SELECT
-            o.id AS order_id,
-            o.total_amount,
-            o.payment_status,
-            o.payment_method,
-            o.created_at,
-            o.address_id,
+            COALESCE(o.order_group, CONCAT('SINGLE-', o.id)) AS group_id,
+            MIN(o.id) AS order_id,
+            GROUP_CONCAT(DISTINCT o.id) AS order_ids,
+            SUM(o.total_amount) AS total_amount,
+            MIN(o.payment_status) AS payment_status,
+            MIN(o.payment_method) AS payment_method,
+            MIN(o.created_at) AS created_at,
+            MIN(o.address_id) AS address_id,
             u.first_name,
             u.last_name,
             (SELECT a.first_name FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_first,
@@ -4335,7 +4342,7 @@ def order_list(request):
             (SELECT a.state FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_state,
             (SELECT a.country FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_country,
             (SELECT a.zip_code FROM addresses a WHERE a.user_id=o.user_id AND a.is_default=TRUE LIMIT 1) AS addr_zip,
-            (SELECT status FROM order_tracking WHERE order_id=o.id ORDER BY updated_at DESC LIMIT 1) AS current_status
+            (SELECT status FROM order_tracking WHERE order_id=MIN(o.id) ORDER BY updated_at DESC LIMIT 1) AS current_status
         FROM orders o
         JOIN users u ON o.user_id=u.id
         JOIN products p ON o.product_id=p.id
@@ -4343,21 +4350,24 @@ def order_list(request):
     if admin["is_superadmin"]:
         orders = db.selectall(order_base_sql + """
             WHERE o.admin_deleted=0
-            GROUP BY o.id
-            ORDER BY o.created_at DESC
+            GROUP BY group_id, u.id, u.first_name, u.last_name
+            ORDER BY created_at DESC
         """)
     else:
         orders = db.selectall(order_base_sql + """
             WHERE p.admin_id=%s AND o.admin_deleted=0
-            GROUP BY o.id
-            ORDER BY o.created_at DESC
+            GROUP BY group_id, u.id, u.first_name, u.last_name
+            ORDER BY created_at DESC
         """, (admin_id,))
 
-    # ✅ Add product list for each order
+    # ✅ Add product list for each grouped order
     for order in orders:
+        oid_list = order["order_ids"].split(",")
+        placeholders = ",".join(["%s"] * len(oid_list))
         if admin["is_superadmin"]:
-            items = db.selectall("""
+            items = db.selectall(f"""
                 SELECT
+                    o.id AS order_id,
                     p.title AS product_title,
                     p.price, p.sale_price,
                     b.name AS brand_name,
@@ -4365,11 +4375,12 @@ def order_list(request):
                 FROM orders o
                 JOIN products p ON o.product_id=p.id
                 LEFT JOIN brands b ON p.brand_id=b.id
-                WHERE o.id=%s
-            """, (order["order_id"],))
+                WHERE o.id IN ({placeholders})
+            """, tuple(oid_list))
         else:
-            items = db.selectall("""
+            items = db.selectall(f"""
                 SELECT
+                    o.id AS order_id,
                     p.title AS product_title,
                     p.price, p.sale_price,
                     b.name AS brand_name,
@@ -4377,8 +4388,8 @@ def order_list(request):
                 FROM orders o
                 JOIN products p ON o.product_id=p.id
                 LEFT JOIN brands b ON p.brand_id=b.id
-                WHERE o.id=%s AND p.admin_id=%s
-            """, (order["order_id"], admin_id))
+                WHERE o.id IN ({placeholders}) AND p.admin_id=%s
+            """, tuple(oid_list) + (admin_id,))
         order["items"] = items
 
     status_list = ['Order Placed', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled']

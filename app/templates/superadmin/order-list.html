@@ -34,6 +34,19 @@
             </p>
             <p class="mb-1"><strong>Payment:</strong> {{ order.payment_method }}</p>
             <p class="mb-1"><strong>Total:</strong> ₹{{ order.total_amount }}</p>
+            <p class="mb-1">
+              <strong>Items:</strong> {{ order.items|length }} product{{ order.items|length|pluralize }}
+            </p>
+
+            <!-- Mini product thumbnails -->
+            {% if order.items %}
+            <div class="d-flex flex-wrap gap-1 mt-2 mb-2">
+              {% for item in order.items %}
+              <img src="/media/{{ item.product_image }}" class="rounded border"
+                style="width:40px; height:40px; object-fit:cover;" title="{{ item.product_title }}">
+              {% endfor %}
+            </div>
+            {% endif %}
 
             <div class="text-end mt-3">
              {% if order.current_status == "Cancelled" %}
@@ -43,14 +56,9 @@
         <input type="hidden" name="delete_order" value="{{ order.order_id }}">
         <button class="btn btn-outline-danger btn-sm">Delete</button>
     </form>
-    <hr>
-    <div class="alert alert-danger text-center p-4">
-        <h5 class="mb-1">This order is cancelled</h5>
-        <p class="mb-0">Product details are no longer accessible.</p>
-    </div>
 {% else %}
-    <button class="btn btn-outline-primary btn-sm" 
-            data-bs-toggle="modal" 
+    <button class="btn btn-outline-primary btn-sm"
+            data-bs-toggle="modal"
             data-bs-target="#orderModal{{ order.order_id }}">
         <i class="bi bi-eye"></i> View Booking
     </button>
@@ -68,6 +76,9 @@
             <div class="modal-header">
               <h5 class="modal-title">
                 Booking Details — #{{ order.order_id }}
+                {% if order.items|length > 1 %}
+                <span class="badge bg-info ms-2">{{ order.items|length }} Items</span>
+                {% endif %}
               </h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -83,6 +94,7 @@
               <p><strong>Customer:</strong> {{ order.first_name }} {{ order.last_name }}</p>
               <p><strong>Booking Date:</strong> {{ order.created_at|date:"d M Y (h:i a)" }}</p>
               <p><strong>Payment:</strong> {{ order.payment_method }}</p>
+              <p><strong>Total:</strong> ₹{{ order.total_amount }}</p>
               <p class="mb-1">
                 <a href="#" data-bs-toggle="collapse" data-bs-target="#addr{{ order.order_id }}"
                   class="text-primary small">
@@ -121,7 +133,7 @@
                     <div class="card-footer bg-transparent border-top pt-2">
                       <form method="post" action="{% url 'order-list' %}">
                         {% csrf_token %}
-                        <input type="hidden" name="order_id" value="{{ order.order_id }}">
+                        <input type="hidden" name="order_id" value="{{ item.order_id }}">
                         <div class="d-flex align-items-center justify-content-between">
                           <label class="text-muted small mb-0 me-2">Status:</label>
                           <select name="status" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
