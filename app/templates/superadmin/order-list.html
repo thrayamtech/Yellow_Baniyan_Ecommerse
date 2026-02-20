@@ -128,6 +128,22 @@
                         <small>₹{{ item.sale_price|default:item.price }}</small>
                       </div>
                     </div>
+                    {% if not admin.is_superadmin %}
+                    <div class="card-footer bg-transparent border-top pt-2">
+                      <form method="post" action="{% url 'order-list' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="order_id" value="{{ item.order_id }}">
+                        <div class="d-flex align-items-center justify-content-between">
+                          <label class="text-muted small mb-0 me-2">Status:</label>
+                          <select name="status" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                            {% for s in status_list %}
+                            <option value="{{ s }}" {% if order.current_status == s %}selected{% endif %}>{{ s }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                      </form>
+                    </div>
+                    {% endif %}
                   </div>
                 </div>
                 {% empty %}

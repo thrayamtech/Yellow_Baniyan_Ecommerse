@@ -44,6 +44,8 @@
                      {% endif %}
                   </td>
                   <td>
+                     <a href="{% url 'view-product' product.id %}" target="_blank"
+                        class="btn btn-outline-info btn-sm me-2">View</a>
                      {% if product.pending_approval %}
                      <a href="{% url 'approve-product-approve' product.id %}"
                         class="btn btn-success btn-sm me-2">Approve</a>

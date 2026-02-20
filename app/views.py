@@ -4352,6 +4352,29 @@ def order_list(request):
     admin_id = request.session["admin_id"]
     admin = db.selectone("SELECT * FROM adminusers WHERE id=%s", (admin_id,))
 
+    # ✅ Vendor (non-superadmin) can update tracking status
+    if request.method == "POST" and request.POST.get("status") and not admin["is_superadmin"]:
+        order_id = request.POST.get("order_id")
+        new_status = request.POST.get("status")
+        if order_id and new_status:
+            check = db.selectone("""
+                SELECT o.id
+                FROM orders o
+                JOIN products p ON o.product_id = p.id
+                WHERE o.id=%s AND p.admin_id=%s
+            """, (order_id, admin_id))
+            if not check:
+                messages.warning(request, "You cannot update another vendor's order.")
+                return redirect("order-list")
+
+            existing = db.selectone("SELECT * FROM order_tracking WHERE order_id=%s", (order_id,))
+            if existing:
+                db.update("UPDATE order_tracking SET status=%s, updated_at=NOW() WHERE order_id=%s", (new_status, order_id))
+            else:
+                db.insert("INSERT INTO order_tracking (order_id, status, updated_at) VALUES (%s,%s,NOW())", (order_id, new_status))
+            messages.success(request, f"Order #{order_id} updated to {new_status}.")
+            return redirect("order-list")
+
     # ✅ Fetch orders grouped by order_group (cart orders clubbed together)
     # For old orders without order_group, each order is its own group
     order_base_sql = """
@@ -4434,10 +4457,12 @@ def order_list(request):
             order["addr_country"] = addr.get("country", "")
             order["addr_zip"] = addr.get("zip_code", "")
 
+    status_list = ['Order Placed', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled']
+
     return render(
         request,
         "superadmin/order-list.html",
-        {"orders": orders, "admin": admin}
+        {"orders": orders, "status_list": status_list, "admin": admin}
     )
 
 
