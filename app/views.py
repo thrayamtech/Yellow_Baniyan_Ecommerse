@@ -70,7 +70,7 @@ def index(request):
 
     user_id = request.session.get("user_id")
     vip = is_user_vip(user_id)
-    vip_filter = "" if vip else "AND (p.is_vip = 0 OR p.is_vip IS NULL)"
+    vip_filter = "" if vip else "AND (COALESCE((SELECT is_vip FROM brands WHERE id=p.brand_id), 0) = 0)"
 
     # fetch top 8 most viewed, then fallback to latest 8 if none
     most_viewed = db.selectall(f"""
@@ -135,7 +135,7 @@ def shop_all(request):
     """Display all products with category + subcategory sidebar"""
     user_id = request.session.get("user_id")
     vip = is_user_vip(user_id)
-    vip_filter = "" if vip else "AND (p.is_vip = 0 OR p.is_vip IS NULL)"
+    vip_filter = "" if vip else "AND (b.is_vip = 0 OR b.is_vip IS NULL)"
 
     categories = db.selectall("SELECT * FROM categories ORDER BY name ASC")
     subcategories = db.selectall("SELECT * FROM subcategories ORDER BY name ASC")
@@ -193,7 +193,7 @@ def category_products(request, category_id):
 
     user_id = request.session.get("user_id")
     vip = is_user_vip(user_id)
-    vip_filter = "" if vip else "AND (p.is_vip = 0 OR p.is_vip IS NULL)"
+    vip_filter = "" if vip else "AND (b.is_vip = 0 OR b.is_vip IS NULL)"
 
     # ✅ Fetch subcategories for sidebar filter
     subcategories = db.selectall("SELECT * FROM subcategories WHERE category_id=%s ORDER BY name ASC", (category_id,))
@@ -449,12 +449,12 @@ def add_to_cart(request, product_id):
     qty = int(request.POST.get("quantity", 1))
 
     # ✅ Check if product exists
-    product = db.selectone("SELECT * FROM products WHERE id=%s", (product_id,))
+    product = db.selectone("SELECT p.*, b.is_vip AS brand_is_vip FROM products p LEFT JOIN brands b ON p.brand_id=b.id WHERE p.id=%s", (product_id,))
     if not product:
         return JsonResponse({"status": "error", "message": "Product not found."})
 
-    # Block non-VIP users from adding VIP products
-    if product.get("is_vip") and not is_user_vip(user_id):
+    # Block non-VIP users from adding VIP brand products
+    if product.get("brand_is_vip") and not is_user_vip(user_id):
         return JsonResponse({"status": "error", "message": "This product is available for VIP members only."})
 
     # ✅ Check if already in cart → update qty
@@ -724,6 +724,7 @@ def view_product(request, id):
            c.name AS category_name,
            s.name AS subcategory_name,
            b.name AS brand_name,
+           b.is_vip AS brand_is_vip,
            a.username AS admin_name,
            a.organization AS admin_org,
            (SELECT image FROM product_images WHERE product_id = p.id LIMIT 1) AS main_image
@@ -735,8 +736,8 @@ def view_product(request, id):
     WHERE p.id=%s
 """, (id,))
 
-    # Block non-VIP users from viewing VIP products
-    if product and product.get("is_vip") and not vip:
+    # Block non-VIP users from viewing VIP brand products
+    if product and product.get("brand_is_vip") and not vip:
         messages.error(request, "This product is available for VIP members only.")
         return redirect("index")
 
@@ -761,7 +762,7 @@ def view_product(request, id):
     
 
     # ✅ Related products (same category, exclude this one)
-    vip_filter = "" if vip else "AND (p.is_vip = 0 OR p.is_vip IS NULL)"
+    vip_filter = "" if vip else "AND (b.is_vip = 0 OR b.is_vip IS NULL)"
     related_products = db.selectall(f"""
         SELECT p.*,
                (SELECT image FROM product_images WHERE product_id=p.id LIMIT 1) AS main_image,
@@ -1016,7 +1017,7 @@ def brand_products(request, brand_id):
 
     user_id = request.session.get("user_id")
     vip = is_user_vip(user_id)
-    vip_filter = "" if vip else "AND (p.is_vip = 0 OR p.is_vip IS NULL)"
+    vip_filter = "" if vip else "AND (b.is_vip = 0 OR b.is_vip IS NULL)"
 
     if user_id:
         db.insert("""
@@ -1477,7 +1478,7 @@ def search_products(request):
 
     user_id = request.session.get("user_id")
     vip = is_user_vip(user_id)
-    vip_filter = "" if vip else "AND (p.is_vip = 0 OR p.is_vip IS NULL)"
+    vip_filter = "" if vip else "AND (COALESCE((SELECT is_vip FROM brands WHERE id=p.brand_id), 0) = 0)"
 
     products = []
     total = 0
@@ -1545,15 +1546,16 @@ def buy_now(request, product_id):
 
     # ✅ Get product details
     product = db.selectone("""
-        SELECT p.*, (SELECT image FROM product_images WHERE product_id=p.id LIMIT 1) AS main_image
-        FROM products p WHERE p.id=%s
+        SELECT p.*, b.is_vip AS brand_is_vip,
+               (SELECT image FROM product_images WHERE product_id=p.id LIMIT 1) AS main_image
+        FROM products p LEFT JOIN brands b ON p.brand_id=b.id WHERE p.id=%s
     """, (product_id,))
     if not product:
         messages.error(request, "Product not found.")
         return redirect("index")
 
-    # Block non-VIP users from buying VIP products
-    if product.get("is_vip") and not is_user_vip(user_id):
+    # Block non-VIP users from buying VIP brand products
+    if product.get("brand_is_vip") and not is_user_vip(user_id):
         messages.error(request, "This product is available for VIP members only.")
         return redirect("index")
 
@@ -2238,6 +2240,8 @@ def add_carousel_image(request):
         description = request.POST.get("description", "").strip()
         page_link = request.POST.get("page_link", "").strip()
         offer_text = request.POST.get("offer_text", "").strip()
+        title_color = request.POST.get("title_color", "#ffffff").strip()
+        description_color = request.POST.get("description_color", "#ffffff").strip()
         image_file = request.FILES.get("image")
 
         # ---------- IMAGE VALIDATION ----------
@@ -2292,9 +2296,9 @@ def add_carousel_image(request):
 
         # ✅ Save record
         db.insert("""
-            INSERT INTO carousel_images (title, description, image, page_link, offer_text)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (carousel_name, description, image_path, page_link, offer_text))
+            INSERT INTO carousel_images (title, description, image, page_link, offer_text, title_color, description_color)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (carousel_name, description, image_path, page_link, offer_text, title_color, description_color))
 
         messages.success(request, f"Carousel '{carousel_name}' added successfully!")
         return redirect("carousel-images")
@@ -2356,6 +2360,8 @@ def edit_carousel(request, id):
         description = request.POST.get("description", "").strip()
         page_link = request.POST.get("page_link", "").strip()
         offer_text = request.POST.get("offer_text", "").strip()
+        title_color = request.POST.get("title_color", "#ffffff").strip()
+        description_color = request.POST.get("description_color", "#ffffff").strip()
         image_file = request.FILES.get("image")
 
         image_path = carousel["image"]
@@ -2408,9 +2414,9 @@ def edit_carousel(request, id):
         # ✅ Use plain triple-quoted string, no f-string
         db.update("""
             UPDATE carousel_images
-            SET title=%s, description=%s, image=%s, page_link=%s, offer_text=%s
+            SET title=%s, description=%s, image=%s, page_link=%s, offer_text=%s, title_color=%s, description_color=%s
             WHERE id=%s
-        """, (title, description, image_path, page_link, offer_text, id))
+        """, (title, description, image_path, page_link, offer_text, title_color, description_color, id))
 
         messages.success(request, "Carousel updated successfully!")
         return redirect("carousel-images")
@@ -3261,6 +3267,31 @@ def toggle_brand_status(request, brand_id):
         "status": "success",
         "new_status": new_status,
         "message": f"Brand visibility {'activated' if new_status else 'hidden'} successfully."
+    })
+
+
+def toggle_brand_vip(request, brand_id):
+    """Only superadmin can toggle brand VIP status"""
+    if "admin_id" not in request.session:
+        return JsonResponse({"status": "error", "message": "Login required"})
+
+    admin_id = request.session["admin_id"]
+    admin = db.selectone("SELECT * FROM adminusers WHERE id=%s", (admin_id,))
+
+    if not admin or not admin["is_superadmin"]:
+        return JsonResponse({"status": "error", "message": "Only superadmin can toggle VIP status"})
+
+    brand = db.selectone("SELECT id, is_vip FROM brands WHERE id=%s", (brand_id,))
+    if not brand:
+        return JsonResponse({"status": "error", "message": "Brand not found"})
+
+    new_status = not bool(brand["is_vip"])
+    db.update("UPDATE brands SET is_vip=%s WHERE id=%s", (new_status, brand_id))
+
+    return JsonResponse({
+        "status": "success",
+        "is_vip": new_status,
+        "message": f"Brand VIP status {'enabled' if new_status else 'disabled'} successfully."
     })
 
 
@@ -4440,12 +4471,14 @@ def order_list(request):
             """, tuple(oid_list) + (admin_id,))
         order["items"] = items
 
-        # Fetch shipping address: use stored address_id, fallback to user's default
+        # Fetch shipping address: use stored address_id, fallback to user's default, then any address
         addr = None
         if order.get("address_id"):
             addr = db.selectone("SELECT * FROM addresses WHERE id=%s", (order["address_id"],))
         if not addr and order.get("user_id"):
-            addr = db.selectone("SELECT * FROM addresses WHERE user_id=%s AND is_default=TRUE LIMIT 1", (order["user_id"],))
+            addr = db.selectone("SELECT * FROM addresses WHERE user_id=%s AND is_default=1 LIMIT 1", (order["user_id"],))
+        if not addr and order.get("user_id"):
+            addr = db.selectone("SELECT * FROM addresses WHERE user_id=%s ORDER BY id DESC LIMIT 1", (order["user_id"],))
         if addr:
             order["addr_first"] = addr.get("first_name", "")
             order["addr_last"] = addr.get("last_name", "")
