@@ -17,10 +17,10 @@
                      <span class="badge text-bg-warning">{{ c.offer_text }}</span>
                      {% endif %}
                      {% if c.title %}
-                     <h2 class="fw-bold mt-2">{{ c.title }}</h2>
+                     <h2 class="fw-bold mt-2" style="color: {{ c.title_color|default:'#ffffff' }}">{{ c.title }}</h2>
                      {% endif %}
                      {% if c.description %}
-                     <p class="lead mb-2">{{ c.description }}</p>
+                     <p class="lead mb-2" style="color: {{ c.description_color|default:'#ffffff' }}">{{ c.description }}</p>
                      {% endif %}
                      {% if c.page_link %}
                      <a href="{{ c.page_link }}" class="btn btn-dark mt-1">

@@ -1,15 +1,13 @@
-{% extends 'base.html' %}
+{% extends 'user/userbase.html' %}
 {% load static %}
 {% block title %}My Wishlist{% endblock %}
 {% block content %}
 
-<main class="py-5">
-  <div class="container">
-    <div class="row mb-4">
-      <div class="col-12">
-        <h2 class="fw-bold">My Wishlist</h2>
-        <p class="text-muted">You have {{ items|length }} item{{ items|pluralize }} saved for later.</p>
-      </div>
+<div class="col-lg-9 col-md-8 col-12">
+  <div class="py-6 p-md-6 p-lg-10">
+    <div class="mb-4">
+      <h2 class="fw-bold">My Wishlist</h2>
+      <p class="text-muted">You have {{ items|length }} item{{ items|pluralize }} saved for later.</p>
     </div>
 
     {% if items %}
@@ -74,7 +72,7 @@
     </div>
     {% endif %}
   </div>
-</main>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
