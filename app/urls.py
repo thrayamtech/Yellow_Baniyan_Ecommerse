@@ -18,6 +18,7 @@ urlpatterns = [
     path('category-products/', views.category_products, name='category-products'),
     path('cart/', views.cart, name='cart'),
     path('cart/checkout/', views.cart_checkout, name='cart-checkout'),
+    path('checkout/save-address/', views.checkout_save_address, name='checkout-save-address'),
     path('cart/demo-payment/', views.cart_demo_payment, name='cart-demo-payment'),
     path("shop-all/", views.shop_all, name="shop-all"),
     path('track-order/<int:order_id>/', views.track_order, name='track-order'),
@@ -78,6 +79,7 @@ urlpatterns = [
     # brand URLs
     path("brands/", views.brands, name="brands"),
     path("toggle-brand-status/<int:brand_id>/", views.toggle_brand_status, name="toggle-brand-status"),
+    path("toggle-brand-vip/<int:brand_id>/", views.toggle_brand_vip, name="toggle-brand-vip"),
     path('add-brand/', views.add_brand, name='add-brand'),
     path("edit-brand/<int:id>/", views.edit_brand, name="edit-brand"),
     path("delete-brand/<int:id>/", views.delete_brand, name="delete-brand"),

@@ -1399,6 +1399,50 @@ def address(request):
         return redirect("address")
 
 
+def checkout_save_address(request):
+    """Save address inline from checkout page and redirect back."""
+    if "user_id" not in request.session:
+        return redirect("userlogin")
+    user_id = request.session["user_id"]
+    next_url = request.POST.get("next", "/")
+
+    address_count = db.selectone(
+        "SELECT COUNT(*) AS cnt FROM addresses WHERE user_id=%s", (user_id,)
+    )["cnt"]
+    if address_count >= 5:
+        messages.error(request, "You can save only 5 addresses. Please delete one from My Addresses.")
+        return redirect(next_url)
+
+    first_name = request.POST.get("first_name", "").strip()
+    last_name = request.POST.get("last_name", "").strip()
+    address_line1 = request.POST.get("address_line1", "").strip()
+    address_line2 = request.POST.get("address_line2", "").strip()
+    city = request.POST.get("city", "").strip()
+    state = request.POST.get("state", "").strip()
+    country = request.POST.get("country", "").strip()
+    zip_code = request.POST.get("zip_code", "").strip()
+    phone = request.POST.get("phone", "").strip()
+    is_default = True if request.POST.get("is_default") == "on" else False
+
+    if not (first_name and address_line1 and city and state and zip_code and phone):
+        messages.error(request, "Please fill all required address fields.")
+        return redirect(next_url)
+
+    if is_default:
+        db.update("UPDATE addresses SET is_default=FALSE WHERE user_id=%s", (user_id,))
+
+    db.insert("""
+        INSERT INTO addresses
+        (user_id, first_name, last_name, address_line1, address_line2,
+        city, state, country, zip_code, phone, is_default)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+    """, (user_id, first_name, last_name, address_line1, address_line2,
+          city, state, country, zip_code, phone, is_default))
+
+    messages.success(request, "Address added successfully.")
+    return redirect(next_url)
+
+
     # ✅ Delete Address
     if request.GET.get("delete"):
         addr_id = request.GET.get("delete")
