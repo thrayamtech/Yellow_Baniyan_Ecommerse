@@ -66,11 +66,13 @@ def is_user_vip(user_id):
 def index(request):
     carousels = db.selectall("SELECT * FROM carousel_images ORDER BY id DESC")
     categories = db.selectall("SELECT * FROM categories ORDER BY id DESC")
-    brands = db.selectall("SELECT * FROM brands WHERE is_active=1 ORDER BY id DESC")
 
     user_id = request.session.get("user_id")
     vip = is_user_vip(user_id)
     vip_filter = "" if vip else "AND (COALESCE((SELECT is_vip FROM brands WHERE id=p.brand_id), 0) = 0)"
+
+    brand_vip_filter = "" if vip else "AND (is_vip = 0 OR is_vip IS NULL)"
+    brands = db.selectall(f"SELECT * FROM brands WHERE is_active=1 {brand_vip_filter} ORDER BY id DESC")
 
     # fetch top 8 most viewed, then fallback to latest 8 if none
     most_viewed = db.selectall(f"""
@@ -139,7 +141,8 @@ def shop_all(request):
 
     categories = db.selectall("SELECT * FROM categories ORDER BY name ASC")
     subcategories = db.selectall("SELECT * FROM subcategories ORDER BY name ASC")
-    brands = db.selectall("SELECT * FROM brands ORDER BY name ASC")
+    brand_vip_filter = "" if vip else "AND (is_vip = 0 OR is_vip IS NULL)"
+    brands = db.selectall(f"SELECT * FROM brands WHERE is_active=1 {brand_vip_filter} ORDER BY name ASC")
 
     # Filter logic (optional)
     cat_id = request.GET.get("cat")
@@ -197,7 +200,8 @@ def category_products(request, category_id):
 
     # ✅ Fetch subcategories for sidebar filter
     subcategories = db.selectall("SELECT * FROM subcategories WHERE category_id=%s ORDER BY name ASC", (category_id,))
-    brands = db.selectall("SELECT * FROM brands ORDER BY name ASC")
+    brand_vip_filter = "" if vip else "AND (is_vip = 0 OR is_vip IS NULL)"
+    brands = db.selectall(f"SELECT * FROM brands WHERE is_active=1 {brand_vip_filter} ORDER BY name ASC")
 
     # ✅ Sorting logic
     sort = request.GET.get("sort", "")
@@ -1024,6 +1028,10 @@ def brand_products(request, brand_id):
 
     user_id = request.session.get("user_id")
     vip = is_user_vip(user_id)
+
+    if brand.get("is_vip") and not vip:
+        messages.error(request, "This brand is exclusive to VIP customers.")
+        return redirect("index")
     vip_filter = "" if vip else "AND (b.is_vip = 0 OR b.is_vip IS NULL)"
 
     if user_id:
