@@ -267,6 +267,12 @@ def category_products(request, category_id):
     # ✅ Categories for navbar
     categories_all = db.selectall("SELECT * FROM categories ORDER BY name ASC")
 
+    # Build query string preserving all filters except 'page'
+    get_params = request.GET.copy()
+    get_params.pop('page', None)
+    qs = get_params.urlencode()
+    query_string = f"{qs}&" if qs else ""
+
     context = {
         "category": category,
         "categories_all": categories_all,
@@ -278,6 +284,7 @@ def category_products(request, category_id):
         "total": total,
         "sort": sort,
         "limit": limit,
+        "query_string": query_string,
     }
     user_id = request.session.get("user_id")
 

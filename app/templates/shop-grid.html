@@ -197,7 +197,7 @@
                         <ul class="pagination mb-0">
                            {% if page > 1 %}
                            <li class="page-item">
-                              <a class="page-link px-3 py-1" href="?page={{ page|add:-1 }}">Previous</a>
+                              <a class="page-link px-3 py-1" href="?{{ query_string }}page={{ page|add:-1 }}">Previous</a>
                            </li>
                            {% else %}
                            <li class="page-item disabled">
@@ -207,18 +207,19 @@
 
                            {% for i in 1|to:total_pages %}
                            <li class="page-item {% if i == page %}active{% endif %}">
-                              <a class="page-link px-3 py-1" href="?page={{ i }}">{{ i }}</a>
+                              <a class="page-link px-3 py-1" href="?{{ query_string }}page={{ i }}">{{ i }}</a>
                            </li>
                            {% endfor %}
 
-                           {% if page < total_pages %} <li class="page-item">
-                              <a class="page-link px-3 py-1" href="?page={{ page|add:1 }}">Next</a>
-                              </li>
-                              {% else %}
-                              <li class="page-item disabled">
-                                 <a class="page-link px-3 py-1" href="#">Next</a>
-                              </li>
-                              {% endif %}
+                           {% if page < total_pages %}
+                           <li class="page-item">
+                              <a class="page-link px-3 py-1" href="?{{ query_string }}page={{ page|add:1 }}">Next</a>
+                           </li>
+                           {% else %}
+                           <li class="page-item disabled">
+                              <a class="page-link px-3 py-1" href="#">Next</a>
+                           </li>
+                           {% endif %}
                         </ul>
                      </nav>
                   </div>
