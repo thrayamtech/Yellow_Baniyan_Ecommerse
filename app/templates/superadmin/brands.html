@@ -282,7 +282,7 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  const csrf = document.querySelector("[name=csrfmiddlewaretoken]")?.value;
+  const csrf = '{{ csrf_token }}';
 
   // Visibility toggle
   document.querySelectorAll(".toggle-brand").forEach(t => {
