@@ -1473,6 +1473,34 @@ def address(request):
 
         return redirect("address")
 
+    # --- GET ---
+    default_id = request.GET.get("default")
+    if default_id:
+        db.update("UPDATE addresses SET is_default=FALSE WHERE user_id=%s", (user_id,))
+        db.update("UPDATE addresses SET is_default=TRUE WHERE id=%s AND user_id=%s", (default_id, user_id))
+        return redirect("address")
+
+    delete_id = request.GET.get("delete")
+    if delete_id:
+        db.delete("DELETE FROM addresses WHERE id=%s AND user_id=%s", (delete_id, user_id))
+        messages.success(request, "Address deleted.")
+        return redirect("address")
+
+    edit_id = request.GET.get("edit")
+    edit_address = None
+    if edit_id:
+        edit_address = db.selectone(
+            "SELECT * FROM addresses WHERE id=%s AND user_id=%s", (edit_id, user_id)
+        )
+
+    addresses = db.selectall(
+        "SELECT * FROM addresses WHERE user_id=%s ORDER BY is_default DESC, id ASC", (user_id,)
+    )
+    return render(request, "user/account-address.html", {
+        "addresses": addresses,
+        "edit_address": edit_address,
+    })
+
 
 def checkout_save_address(request):
     """Save address inline from checkout page and redirect back."""
