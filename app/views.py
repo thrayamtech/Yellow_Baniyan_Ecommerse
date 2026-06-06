@@ -62,6 +62,33 @@ def is_user_vip(user_id):
     return bool(user and user.get("is_vip"))
 
 
+def get_vip_discount_percent(product):
+    """
+    Returns the applicable VIP discount % for a VIP-tagged product.
+    Priority: product.vip_discount > brand.vip_discount > subcategory.vip_discount > master_vip_discount
+    """
+    if float(product.get("vip_discount") or 0) > 0:
+        return float(product["vip_discount"])
+
+    brand_id = product.get("brand_id")
+    if brand_id:
+        brand = db.selectone("SELECT vip_discount FROM brands WHERE id=%s", (brand_id,))
+        if brand and float(brand.get("vip_discount") or 0) > 0:
+            return float(brand["vip_discount"])
+
+    subcategory_id = product.get("subcategory_id")
+    if subcategory_id:
+        sub = db.selectone("SELECT vip_discount FROM subcategories WHERE id=%s", (subcategory_id,))
+        if sub and float(sub.get("vip_discount") or 0) > 0:
+            return float(sub["vip_discount"])
+
+    master = db.selectone("SELECT master_vip_discount FROM shipping_settings LIMIT 1")
+    if master and float(master.get("master_vip_discount") or 0) > 0:
+        return float(master["master_vip_discount"])
+
+    return 0
+
+
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def index(request):
     carousels = db.selectall("SELECT * FROM carousel_images ORDER BY id DESC")
@@ -583,10 +610,11 @@ def cart_demo_payment(request):
 
     user_id = request.session["user_id"]
 
-    # 🛒 Get all cart items
+    # 🛒 Get all cart items (include VIP fields)
     items = db.selectall("""
-        SELECT c.id AS cart_id, p.id AS product_id, p.price, p.sale_price, c.quantity,
-               c.size_name, c.size_price
+        SELECT c.id AS cart_id, p.id AS product_id, p.price, p.sale_price,
+               p.is_vip, p.brand_id, p.subcategory_id, p.vip_discount,
+               c.quantity, c.size_name, c.size_price
         FROM cart c
         JOIN products p ON c.product_id = p.id
         WHERE c.user_id=%s
@@ -596,10 +624,17 @@ def cart_demo_payment(request):
         messages.warning(request, "Your cart is empty.")
         return redirect("cart")
 
-    # 🧾 Calculate total (use size_price when available)
+    is_vip_user = is_user_vip(user_id)
+
+    # 🧾 Calculate total (use size_price when available, apply VIP discount)
     total_amount = 0
     for item in items:
-        price = item["size_price"] if item.get("size_price") else (item["sale_price"] or item["price"])
+        price = float(item["size_price"] if item.get("size_price") else (item["sale_price"] or item["price"]))
+        if is_vip_user and item.get("is_vip"):
+            disc_pct = get_vip_discount_percent(item)
+            if disc_pct > 0:
+                price = round(price * (1 - disc_pct / 100), 2)
+        item["_final_price"] = price
         total_amount += price * item["quantity"]
 
     # 🪙 Fetch user’s available coins
@@ -625,8 +660,8 @@ def cart_demo_payment(request):
 
     order_ids = []
     for item in items:
-        item_price = item["size_price"] if item.get("size_price") else (item["sale_price"] or item["price"])
-        total_item_price = item_price * item["quantity"]
+        item_price = item.get("_final_price") or (item["size_price"] if item.get("size_price") else (item["sale_price"] or item["price"]))
+        total_item_price = float(item_price) * item["quantity"]
 
         order_id = db.insert_return_id("""
             INSERT INTO orders (user_id, product_id, total_amount, payment_status, created_at, order_group, address_id, size_name, size_price)
@@ -1682,8 +1717,18 @@ def buy_now(request, product_id):
     else:
         product_price = Decimal(str(product["sale_price"] or product["price"]))
 
-    # ✅ Total (product + shipping)
-    total_price = (product_price + shipping_fee).quantize(Decimal("0.01"))
+    # ✅ VIP discount (applied if user is VIP and product is VIP-tagged)
+    vip_discount_pct = 0
+    vip_discount_amount = Decimal("0.00")
+    if is_user_vip(user_id) and product.get("is_vip"):
+        vip_discount_pct = get_vip_discount_percent(product)
+        if vip_discount_pct > 0:
+            vip_discount_amount = (product_price * Decimal(str(vip_discount_pct)) / Decimal("100")).quantize(Decimal("0.01"))
+
+    discounted_price = (product_price - vip_discount_amount).quantize(Decimal("0.01"))
+
+    # ✅ Total (discounted product + shipping)
+    total_price = (discounted_price + shipping_fee).quantize(Decimal("0.01"))
 
     # ✅ Fetch total SuperCoins (earned - spent if you track that later)
     coins = db.selectone("""
@@ -1704,6 +1749,8 @@ def buy_now(request, product_id):
         "total_price": total_price,
         "subtotal": product_price,
         "selected_size": selected_size,
+        "vip_discount_pct": vip_discount_pct,
+        "vip_discount_amount": vip_discount_amount,
         "cart_count": get_cart_count(user_id),
         "wishlist_count": get_wishlist_count(user_id),
     })
@@ -1717,9 +1764,10 @@ def cart_checkout(request):
 
     user_id = request.session["user_id"]
 
-    # 🛒 Get all cart items (include product weight and size info)
+    # 🛒 Get all cart items (include product weight, size and VIP discount info)
     items = db.selectall("""
         SELECT c.id AS cart_id, p.id AS product_id, p.title, p.price, p.sale_price, p.weight,
+               p.is_vip, p.brand_id, p.subcategory_id, p.vip_discount,
                (SELECT image FROM product_images WHERE product_id=p.id LIMIT 1) AS main_image,
                c.quantity, c.size_name, c.size_price
         FROM cart c
@@ -1731,13 +1779,24 @@ def cart_checkout(request):
         messages.warning(request, "Your cart is empty.")
         return redirect("cart")
 
-    # 🧮 Calculate subtotal (use Decimal for accuracy, prefer size_price)
+    is_vip_user = is_user_vip(user_id)
+
+    # 🧮 Calculate subtotal (use Decimal for accuracy, prefer size_price, apply VIP discount)
     subtotal = Decimal("0.00")
+    total_vip_discount = Decimal("0.00")
     for item in items:
         price = Decimal(str(item["size_price"] if item.get("size_price") else (item["sale_price"] or item["price"])))
         item["effective_price"] = price
         item["total_price"] = (price * Decimal(str(item["quantity"]))).quantize(Decimal("0.01"))
         subtotal += item["total_price"]
+
+        if is_vip_user and item.get("is_vip"):
+            disc_pct = get_vip_discount_percent(item)
+            if disc_pct > 0:
+                item_vip_disc = (item["total_price"] * Decimal(str(disc_pct)) / Decimal("100")).quantize(Decimal("0.01"))
+                total_vip_discount += item_vip_disc
+
+    subtotal_after_vip = (subtotal - total_vip_discount).quantize(Decimal("0.01"))
 
     # 🧾 Fetch all addresses for selection
     addresses = db.selectall(
@@ -1773,8 +1832,8 @@ def cart_checkout(request):
     # 💸 Calculate shipping
     shipping_fee = (total_weight * cost_per_kg).quantize(Decimal("0.01"))
 
-    # ✅ Total (Subtotal + Shipping)
-    total_with_shipping = (subtotal + shipping_fee).quantize(Decimal("0.01"))
+    # ✅ Total (Subtotal after VIP discount + Shipping)
+    total_with_shipping = (subtotal_after_vip + shipping_fee).quantize(Decimal("0.01"))
 
     return render(request, "purchase.html", {
         "cart_items": items,
@@ -1784,6 +1843,7 @@ def cart_checkout(request):
         "user_coins": user_coins,
         "shipping_fee": shipping_fee,
         "total_with_shipping": total_with_shipping,
+        "total_vip_discount": total_vip_discount,
         "cost_per_kg": cost_per_kg,
         "is_cart_checkout": True,
         "cart_count": get_cart_count(user_id),
@@ -1813,12 +1873,18 @@ def demo_payment(request, product_id):
             (size_id, product_id)
         )
         if size_row:
-            amount = size_row["price"]
+            amount = float(size_row["price"])
             size_name = size_row["size_name"]
         else:
-            amount = product["sale_price"] or product["price"]
+            amount = float(product["sale_price"] or product["price"])
     else:
-        amount = product["sale_price"] or product["price"]
+        amount = float(product["sale_price"] or product["price"])
+
+    # Apply VIP discount if user is VIP and product is VIP-tagged
+    if is_user_vip(user_id) and product.get("is_vip"):
+        vip_disc_pct = get_vip_discount_percent(product)
+        if vip_disc_pct > 0:
+            amount = round(amount * (1 - vip_disc_pct / 100), 2)
 
     # 🪙 Check user total SuperCoins
     total_coins = db.selectone("SELECT COALESCE(SUM(coins_earned), 0) AS total FROM rewards WHERE user_id=%s", (user_id,))
@@ -2821,11 +2887,13 @@ def edit_subcategory(request, id):
         meta_description = request.POST.get("meta_description", "")
         category_id = request.POST.get("category_id")
 
+        vip_discount = request.POST.get("vip_discount", "0") or "0"
+
         db.update("""
             UPDATE subcategories
-            SET category_id=%s, name=%s, slug=%s, description=%s, meta_title=%s, meta_description=%s
+            SET category_id=%s, name=%s, slug=%s, description=%s, meta_title=%s, meta_description=%s, vip_discount=%s
             WHERE id=%s
-        """, (category_id, name, slug, description, meta_title, meta_description, id))
+        """, (category_id, name, slug, description, meta_title, meta_description, vip_discount, id))
 
         messages.success(request, "Subcategory updated successfully!")
         return redirect("categories")
@@ -3022,13 +3090,15 @@ def edit_brand(request, id):
             saved_name = fs.save(filename, image_file)
             image_path = f"brands/{saved_name}"
             
+        vip_discount = request.POST.get("vip_discount", "0") or "0"
+
         if not brand_name:
             messages.error(request, "Brand name is required.")
 
         db.update("""
             UPDATE brands SET category_id=%s, name=%s, slug=%s, description=%s,
-            image=%s, meta_title=%s, meta_description=%s WHERE id=%s
-        """, (category_id, brand_name, slug, description, image_path, meta_title, meta_description, id))
+            image=%s, meta_title=%s, meta_description=%s, vip_discount=%s WHERE id=%s
+        """, (category_id, brand_name, slug, description, image_path, meta_title, meta_description, vip_discount, id))
         
         try:
             color = extract_dominant_color(image_path)  # ✅ use the updated path, not brand["image"]
@@ -3229,19 +3299,20 @@ def add_products(request, category_id):
         meta_title = request.POST.get("meta_title", "")
         meta_description = request.POST.get("meta_description", "")
         is_vip = request.POST.get("is_vip") == "on"
+        vip_discount = request.POST.get("vip_discount", "0") or "0"
 
         approved = admin["is_superadmin"]
         pending_approval = not admin["is_superadmin"]
 
         db.insert("""
-            INSERT INTO products 
+            INSERT INTO products
             (title, category_id, subcategory_id, brand_id, price, sale_price, stock, weight, description,
-             meta_title, meta_description, admin_id, approved, pending_approval, is_vip)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+             meta_title, meta_description, admin_id, approved, pending_approval, is_vip, vip_discount)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             title, category_id, subcategory_id, brand_id, price, sale_price, stock, weight,
             description, meta_title, meta_description, admin_id,
-            approved, pending_approval, is_vip
+            approved, pending_approval, is_vip, vip_discount
         ))
 
         product = db.selectone("SELECT * FROM products ORDER BY id DESC LIMIT 1")
@@ -3450,14 +3521,16 @@ def edit_product(request, id):
         meta_title = request.POST.get("meta_title", "")
         meta_description = request.POST.get("meta_description", "")
 
+        vip_discount = request.POST.get("vip_discount", "0") or "0"
+
         # ✅ Update product info
         db.update("""
             UPDATE products
             SET title=%s, subcategory_id=%s, brand_id=%s, price=%s, sale_price=%s, stock=%s, weight=%s,
-                description=%s, meta_title=%s, meta_description=%s
+                description=%s, meta_title=%s, meta_description=%s, vip_discount=%s
             WHERE id=%s
         """, (title, subcategory_id, brand_id, price, sale_price, stock, weight,
-              description, meta_title, meta_description, id))
+              description, meta_title, meta_description, vip_discount, id))
 
         # ✅ Handle custom fields
         db.delete("DELETE FROM product_attributes WHERE product_id=%s", (id,))
@@ -4217,8 +4290,12 @@ def manage_shipping_rewards(request):
 
     admin_id = request.session["admin_id"]
     admin = db.selectone("SELECT * FROM adminusers WHERE id=%s", (admin_id,))
-    if not admin or not admin["is_superadmin"]:
-        messages.error(request, "Access denied. Superadmin only.")
+    if not admin:
+        return redirect("adminlogin")
+
+    # Shipping and template management are superadmin-only actions
+    if not admin["is_superadmin"] and request.method == "POST":
+        messages.error(request, "Access denied.")
         return redirect("admin-home")
 
     # ===============================================
@@ -4238,6 +4315,12 @@ def manage_shipping_rewards(request):
     if request.method == "POST" and "delete_shipping" in request.POST:
         db.update("UPDATE shipping_settings SET cost_per_kg=0 WHERE id=1")
         messages.success(request, "Shipping cost reset to ₹0/kg")
+        return redirect("manage-shipping-rewards")
+
+    if request.method == "POST" and "update_master_vip_discount" in request.POST:
+        disc = request.POST.get("master_vip_discount", "0") or "0"
+        db.update("UPDATE shipping_settings SET master_vip_discount=%s WHERE id=1", (disc,))
+        messages.success(request, f"Master VIP discount updated to {disc}%")
         return redirect("manage-shipping-rewards")
 
     # ===============================================
@@ -4330,6 +4413,18 @@ def manage_shipping_rewards(request):
             rewards_data.append(data)
 
     # ===============================================
+    # Redeemed rewards — all users, all roles can see
+    # ===============================================
+    redeemed_rewards = db.selectall("""
+        SELECT r.id, r.source, r.promo_code, r.created_at,
+               u.first_name, u.last_name, u.email
+        FROM rewards r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.promo_code IS NOT NULL
+        ORDER BY r.created_at DESC
+    """)
+
+    # ===============================================
     # Render
     # ===============================================
     return render(
@@ -4342,6 +4437,7 @@ def manage_shipping_rewards(request):
             "fields": fields,
             "rewards_data": rewards_data,
             "all_templates": all_templates,
+            "redeemed_rewards": redeemed_rewards,
         },
     )
 

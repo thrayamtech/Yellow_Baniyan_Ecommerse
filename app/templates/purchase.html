@@ -255,6 +255,18 @@
           </span>
         </div>
 
+        {% if is_cart_checkout and total_vip_discount > 0 %}
+        <div class="d-flex justify-content-between mb-2 small">
+          <span class="text-success fw-semibold">VIP Discount:</span>
+          <span class="text-success fw-semibold">-₹{{ total_vip_discount }}</span>
+        </div>
+        {% elif not is_cart_checkout and vip_discount_amount > 0 %}
+        <div class="d-flex justify-content-between mb-2 small">
+          <span class="text-success fw-semibold">VIP Discount ({{ vip_discount_pct }}%):</span>
+          <span class="text-success fw-semibold">-₹{{ vip_discount_amount }}</span>
+        </div>
+        {% endif %}
+
         <div class="d-flex justify-content-between mb-2 small" id="coinDiscountRow" style="display:none;">
           <span>Leaves Discount:</span>
           <span class="text-danger fw-semibold" id="coinDiscount">-₹0</span>

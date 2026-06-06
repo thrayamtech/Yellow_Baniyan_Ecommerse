@@ -7,7 +7,8 @@
 <div class="container mt-4">
   <h2 class="mb-4">Manage Shipping & Rewards</h2>
 
-  <!-- SHIPPING COST -->
+  {% if admin.is_superadmin %}
+  <!-- SHIPPING COST — superadmin only -->
   <div class="card mb-5 shadow-sm">
     <div class="card-header bg-primary text-white">Shipping Cost</div>
     <div class="card-body">
@@ -34,95 +35,139 @@
     </div>
   </div>
 
- <!-- REWARDS SECTION -->
-<div class="card shadow-sm">
-  <div class="card-header bg-secondary text-white">Rewards Template</div>
-  <div class="card-body">
-    <form method="POST" enctype="multipart/form-data" class="mb-3">
-      {% csrf_token %}
-      <input type="hidden" name="upload_rewards" value="1">
-      <div class="row">
-        <div class="col-md-8">
-          <label class="form-label fw-bold">Upload Reward Excel</label>
-          <input type="file" name="rewards_file" class="form-control" required>
+  <!-- MASTER VIP DISCOUNT — superadmin only -->
+  <div class="card mb-5 shadow-sm">
+    <div class="card-header bg-warning text-dark fw-semibold">Master VIP Discount (Fallback)</div>
+    <div class="card-body">
+      <form method="POST" class="d-flex align-items-end gap-3 flex-wrap">
+        {% csrf_token %}
+        <input type="hidden" name="update_master_vip_discount" value="1">
+        <div>
+          <label class="form-label fw-bold">Master VIP Discount (%)</label>
+          <input type="number" step="0.01" min="0" max="100" name="master_vip_discount"
+                 class="form-control" value="{{ shipping.master_vip_discount|default:0 }}" required>
         </div>
-        <div class="col-md-4 d-flex align-items-end">
-          <button type="submit" class="btn btn-primary w-100">Upload Rewards</button>
+        <div>
+          <button type="submit" class="btn btn-warning mt-4">Update</button>
         </div>
-      </div>
-    </form>
-
-<form method="POST" class="d-flex align-items-center mt-3">
-  {% csrf_token %}
-  <div class="flex-grow-1">
-    <label class="form-label fw-semibold">Select Active Template</label>
-    <select name="active_template" class="form-select">
-      {% for t in all_templates %}
-        <option value="{{ t.id }}" {% if t.is_active %}selected{% endif %}>
-          {{ t.template_name }} {% if t.is_active %}(Active){% endif %}
-        </option>
-      {% empty %}
-        <option disabled>No templates uploaded yet</option>
-      {% endfor %}
-    </select>
-  </div>
-  <button type="submit" name="set_active" class="btn btn-success ms-2" style="height: fit-content;">
-    Set Active
-  </button>
-</form>
-
-<!-- Your existing reward table -->
-<h6 class="fw-bold mt-4">Active Template: {{ template.template_name }}</h6>
-
-
-    {% if template %}
-    <div class="table-responsive mt-3">
-      
-      <table class="table table-bordered table-striped">
-        <thead class="table-light">
-          <tr>
-            {% for c in fields %}<th>{{ c|capfirst }}</th>{% endfor %}
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in rewards_data %}
-          <tr>
-            {% for field in fields %}
-              <td>{{ row|get_item:field }}</td>
-            {% endfor %}
-            <td>
-              <a href="?delete_id={{ row.id }}" class="btn btn-sm btn-danger"
-   onclick="return confirm('Delete this reward?')">Delete</a>
-            </td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="{{ fields|length|add:1 }}" class="text-center">No rewards found.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      </form>
+      <p class="text-muted small mt-2">Applied to all VIP products when no product / brand / subcategory VIP discount is set. Set to 0 to disable.</p>
     </div>
-    {% else %}
-    <div class="alert alert-info mt-3">No reward template uploaded yet.</div>
-    {% endif %}
   </div>
-</div>
 
-  
-</div>
+  <!-- REWARDS TEMPLATE — superadmin only -->
+  <div class="card shadow-sm mb-5">
+    <div class="card-header bg-secondary text-white">Rewards Template</div>
+    <div class="card-body">
+      <form method="POST" enctype="multipart/form-data" class="mb-3">
+        {% csrf_token %}
+        <input type="hidden" name="upload_rewards" value="1">
+        <div class="row">
+          <div class="col-md-8">
+            <label class="form-label fw-bold">Upload Reward Excel</label>
+            <input type="file" name="rewards_file" class="form-control" required>
+          </div>
+          <div class="col-md-4 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">Upload Rewards</button>
+          </div>
+        </div>
+      </form>
 
+      <form method="POST" class="d-flex align-items-center mt-3">
+        {% csrf_token %}
+        <div class="flex-grow-1">
+          <label class="form-label fw-semibold">Select Active Template</label>
+          <select name="active_template" class="form-select">
+            {% for t in all_templates %}
+              <option value="{{ t.id }}" {% if t.is_active %}selected{% endif %}>
+                {{ t.template_name }} {% if t.is_active %}(Active){% endif %}
+              </option>
+            {% empty %}
+              <option disabled>No templates uploaded yet</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" name="set_active" class="btn btn-success ms-2" style="height: fit-content;">
+          Set Active
+        </button>
+      </form>
+
+      <h6 class="fw-bold mt-4">Active Template: {{ template.template_name|default:"None" }}</h6>
+
+      {% if template %}
+      <div class="table-responsive mt-3">
+        <table class="table table-bordered table-striped">
+          <thead class="table-light">
+            <tr>
+              {% for c in fields %}<th>{{ c|capfirst }}</th>{% endfor %}
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rewards_data %}
+            <tr>
+              {% for field in fields %}
+                <td>{{ row|get_item:field }}</td>
+              {% endfor %}
+              <td>
+                <a href="?delete_id={{ row.id }}" class="btn btn-sm btn-danger"
+                   onclick="return confirm('Delete this reward?')">Delete</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="{{ fields|length|add:1 }}" class="text-center">No rewards found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="alert alert-info mt-3">No reward template uploaded yet.</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- REDEEMED REWARDS — visible to all admins and sellers -->
+  <div class="card shadow-sm">
+    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+      <span>Redeemed Rewards (Leaves Issued to Customers)</span>
+      <span class="badge bg-white text-success">{{ redeemed_rewards|length }} total</span>
+    </div>
+    <div class="card-body">
+      {% if redeemed_rewards %}
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Customer</th>
+              <th>Email</th>
+              <th>Reward</th>
+              <th>Promo Code</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in redeemed_rewards %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ r.first_name }} {{ r.last_name }}</td>
+              <td>{{ r.email }}</td>
+              <td>{{ r.source }}</td>
+              <td><code>{{ r.promo_code }}</code></td>
+              <td>{{ r.created_at|date:"d M Y, h:i a" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="alert alert-info mb-0">No rewards have been redeemed yet.</div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
 </main>
-<script>
-  // Edit button handler
-  document.querySelectorAll(".editBtn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.getElementById("edit_row_id").value = btn.dataset.id;
-      document.getElementById("edit_weight_from").value = btn.dataset.from;
-      document.getElementById("edit_weight_to").value = btn.dataset.to;
-      document.getElementById("edit_cost").value = btn.dataset.cost;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-  });
-</script>
 
 {% endblock %}
