@@ -99,16 +99,31 @@
 
         <!-- 💰 Price -->
         <div class="d-flex align-items-center mb-3">
-          {% if product.sale_price and product.sale_price != product.price %}
-          <h4 class="text-dark me-3 mb-0">₹{{ product.sale_price }}</h4>
+          {% if sizes %}
+          <h4 class="text-dark mb-0 price-display">₹{{ sizes.0.price }}</h4>
+          {% elif product.sale_price and product.sale_price != product.price %}
+          <h4 class="text-dark me-3 mb-0 price-display">₹{{ product.sale_price }}</h4>
           <span class="text-decoration-line-through text-muted">₹{{ product.price }}</span>
           <small class="text-danger fw-semibold ms-2">{{ product.price|discount_percent:product.sale_price }}% Off</small>
           {% else %}
-          <h4 class="text-dark mb-0">₹{{ product.sale_price|default:product.price }}</h4>
+          <h4 class="text-dark mb-0 price-display">₹{{ product.sale_price|default:product.price }}</h4>
           {% endif %}
         </div>
 
         <p class="small text-success fw-semibold">In Stock</p>
+
+        <!-- 🎽 Size Selector (only shown if product has sizes) -->
+        {% if sizes %}
+        <div class="mb-3">
+          <label class="fw-semibold mb-1">Select Size:</label>
+          <select id="sizeSelect" class="form-select">
+            <option value="">-- Choose a size --</option>
+            {% for s in sizes %}
+            <option value="{{ s.id }}" data-price="{{ s.price }}">{{ s.size_name }} — ₹{{ s.price }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
 
         <!-- 🛒 Add to Cart / Buy Buttons -->
         <div class="d-flex flex-column gap-2 my-4">
@@ -414,11 +429,38 @@
 </style>
 
 <script>
+  // Update displayed price when a size is selected
+  document.addEventListener("DOMContentLoaded", function () {
+    const sizeSelect = document.getElementById("sizeSelect");
+    if (sizeSelect) {
+      sizeSelect.addEventListener("change", function () {
+        const opt = this.options[this.selectedIndex];
+        const price = opt.dataset.price;
+        if (price) {
+          const priceEl = document.querySelector(".price-display");
+          if (priceEl) priceEl.textContent = "₹" + parseFloat(price).toFixed(2);
+        }
+      });
+    }
+  });
+
   async function addToCart(productId) {
     const csrfToken = '{{ csrf_token }}';
+    const sizeSelect = document.getElementById("sizeSelect");
+    const sizeId = sizeSelect ? sizeSelect.value : "";
+
+    if (sizeSelect && !sizeId) {
+      Swal.fire({ icon: "warning", title: "Select Size", text: "Please choose a size before adding to cart.", confirmButtonColor: "#ff9900" });
+      return;
+    }
+
+    const body = new URLSearchParams({ quantity: 1 });
+    if (sizeId) body.append("size_id", sizeId);
+
     const res = await fetch(`/add-to-cart/${productId}/`, {
       method: "POST",
-      headers: { "X-CSRFToken": csrfToken },
+      headers: { "X-CSRFToken": csrfToken, "Content-Type": "application/x-www-form-urlencoded" },
+      body: body,
     });
 
     const data = await res.json();
@@ -482,6 +524,14 @@
 
 <script>
   async function buyNow(productId) {
+    const sizeSelect = document.getElementById("sizeSelect");
+    const sizeId = sizeSelect ? sizeSelect.value : "";
+
+    if (sizeSelect && !sizeId) {
+      Swal.fire({ icon: "warning", title: "Select Size", text: "Please choose a size before buying.", confirmButtonColor: "#ff9900" });
+      return;
+    }
+
     Swal.fire({
       title: "Proceed to Checkout?",
       text: "You’ll be redirected to payment and address selection.",
@@ -501,15 +551,11 @@
           allowOutsideClick: false,
           timer: 1200,
           timerProgressBar: true,
-          didOpen: () => {
-            Swal.showLoading();
-          }
+          didOpen: () => { Swal.showLoading(); }
         });
 
-        // Redirect after short delay
-        setTimeout(() => {
-          window.location.href = `/buy-now/${productId}/`;
-        }, 1200);
+        const url = sizeId ? `/buy-now/${productId}/?size_id=${sizeId}` : `/buy-now/${productId}/`;
+        setTimeout(() => { window.location.href = url; }, 1200);
       }
     });
   }

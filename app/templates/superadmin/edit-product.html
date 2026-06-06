@@ -116,6 +116,22 @@
                         Field</button>
                 </div>
 
+                <!-- Product Sizes -->
+                <div class="mb-3 col-lg-12 mt-3">
+                    <h4 class="mb-1">Product Sizes <small class="text-muted fw-normal fs-6">(optional)</small></h4>
+                    <p class="text-muted small mb-2">Add size variants with individual prices. Leave empty if this product has no sizes.</p>
+                    <div id="sizeFields">
+                        {% for size in sizes %}
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <input type="text" name="size_name[]" value="{{ size.size_name }}" class="form-control" placeholder="Size">
+                            <input type="number" name="size_price[]" value="{{ size.price }}" step="0.01" min="0" class="form-control" placeholder="Price (₹)">
+                            <button type="button" class="btn btn-danger btn-sm removeSize">&times;</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" id="addSizeBtn" class="btn btn-outline-secondary btn-sm mt-2">+ Add Size</button>
+                </div>
+
                 <div class="mb-3 col-lg-12">
                     <label class="form-label">Meta Title</label>
                     <input type="text" name="meta_title" value="{{ product.meta_title }}" class="form-control">
@@ -143,6 +159,25 @@
         document.querySelector("form").addEventListener("submit", function () {
             descInput.value = quill.root.innerHTML;
         });
+
+        // Size variants
+        const addSizeBtn = document.getElementById("addSizeBtn");
+        const sizeContainer = document.getElementById("sizeFields");
+        if (addSizeBtn && sizeContainer) {
+            addSizeBtn.addEventListener("click", function () {
+                const row = document.createElement("div");
+                row.classList.add("d-flex", "align-items-center", "gap-2", "mb-2");
+                row.innerHTML = `
+                    <input type="text" name="size_name[]" class="form-control" placeholder="Size (e.g. S, M, L, XL, 40, 42)" required>
+                    <input type="number" name="size_price[]" step="0.01" min="0" class="form-control" placeholder="Price (₹)" required>
+                    <button type="button" class="btn btn-danger btn-sm removeSize">&times;</button>
+                `;
+                sizeContainer.appendChild(row);
+            });
+            sizeContainer.addEventListener("click", function (e) {
+                if (e.target.classList.contains("removeSize")) e.target.closest("div").remove();
+            });
+        }
 
         // ✅ Add/Remove custom field logic
         const addBtn = document.getElementById("addFieldBtn");

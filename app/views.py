@@ -458,6 +458,7 @@ def add_to_cart(request, product_id):
 
     user_id = request.session["user_id"]
     qty = int(request.POST.get("quantity", 1))
+    size_id = request.POST.get("size_id") or None
 
     # ✅ Check if product exists
     product = db.selectone("SELECT p.*, b.is_vip AS brand_is_vip FROM products p LEFT JOIN brands b ON p.brand_id=b.id WHERE p.id=%s", (product_id,))
@@ -468,18 +469,37 @@ def add_to_cart(request, product_id):
     if product.get("brand_is_vip") and not is_user_vip(user_id):
         return JsonResponse({"status": "error", "message": "This product is available for VIP members only."})
 
-    # ✅ Check if already in cart → update qty
+    # Validate size selection
+    size_name = None
+    size_price = None
+    if size_id:
+        size_row = db.selectone(
+            "SELECT * FROM product_sizes WHERE id=%s AND product_id=%s",
+            (size_id, product_id)
+        )
+        if not size_row:
+            return JsonResponse({"status": "error", "message": "Invalid size selected."})
+        size_name = size_row["size_name"]
+        size_price = float(size_row["price"])
+    else:
+        has_sizes = db.selectone("SELECT id FROM product_sizes WHERE product_id=%s LIMIT 1", (product_id,))
+        if has_sizes:
+            return JsonResponse({"status": "error", "message": "Please select a size before adding to cart."})
+
+    # ✅ Check if already in cart → update qty (match product + size)
     existing = db.selectone(
-        "SELECT * FROM cart WHERE user_id=%s AND product_id=%s",
-        (user_id, product_id)
+        "SELECT * FROM cart WHERE user_id=%s AND product_id=%s AND size_id <=> %s",
+        (user_id, product_id, size_id)
     )
 
     if existing:
         db.update("UPDATE cart SET quantity = quantity + %s WHERE id=%s", (qty, existing["id"]))
         return JsonResponse({"status": "updated", "cart_count": get_cart_count(user_id), "message": "Quantity updated in your cart."})
     else:
-        db.insert("INSERT INTO cart (user_id, product_id, quantity) VALUES (%s,%s,%s)",
-                  (user_id, product_id, qty))
+        db.insert(
+            "INSERT INTO cart (user_id, product_id, quantity, size_id, size_name, size_price) VALUES (%s,%s,%s,%s,%s,%s)",
+            (user_id, product_id, qty, size_id, size_name, size_price)
+        )
         return JsonResponse({"status": "added", "cart_count": get_cart_count(user_id), "message": "Product added to your cart."})
 
 
@@ -495,15 +515,16 @@ def cart(request):
     items = db.selectall("""
         SELECT c.id AS cart_id, p.id AS product_id, p.title, p.price, p.sale_price,
                (SELECT image FROM product_images WHERE product_id=p.id LIMIT 1) AS image,
-               c.quantity
+               c.quantity, c.size_name, c.size_price
         FROM cart c
         JOIN products p ON c.product_id = p.id
         WHERE c.user_id=%s
     """, (user_id,))
 
-    # 👉  Compute total per item so Django can render it
+    # Compute total per item (use size_price when available)
     for item in items:
-        price = item["sale_price"] or item["price"]
+        price = item["size_price"] if item.get("size_price") else (item["sale_price"] or item["price"])
+        item["effective_price"] = price
         item["total_price"] = price * item["quantity"]
 
     subtotal = sum(item["total_price"] for item in items)
@@ -564,7 +585,8 @@ def cart_demo_payment(request):
 
     # 🛒 Get all cart items
     items = db.selectall("""
-        SELECT c.id AS cart_id, p.id AS product_id, p.price, p.sale_price, c.quantity
+        SELECT c.id AS cart_id, p.id AS product_id, p.price, p.sale_price, c.quantity,
+               c.size_name, c.size_price
         FROM cart c
         JOIN products p ON c.product_id = p.id
         WHERE c.user_id=%s
@@ -574,10 +596,10 @@ def cart_demo_payment(request):
         messages.warning(request, "Your cart is empty.")
         return redirect("cart")
 
-    # 🧾 Calculate total
+    # 🧾 Calculate total (use size_price when available)
     total_amount = 0
     for item in items:
-        price = item["sale_price"] or item["price"]
+        price = item["size_price"] if item.get("size_price") else (item["sale_price"] or item["price"])
         total_amount += price * item["quantity"]
 
     # 🪙 Fetch user’s available coins
@@ -603,13 +625,14 @@ def cart_demo_payment(request):
 
     order_ids = []
     for item in items:
-        item_price = item["sale_price"] or item["price"]
+        item_price = item["size_price"] if item.get("size_price") else (item["sale_price"] or item["price"])
         total_item_price = item_price * item["quantity"]
 
         order_id = db.insert_return_id("""
-            INSERT INTO orders (user_id, product_id, total_amount, payment_status, created_at, order_group, address_id)
-            VALUES (%s, %s, %s, %s, NOW(), %s, %s)
-        """, (user_id, item["product_id"], total_item_price, "success", order_group, address_id))
+            INSERT INTO orders (user_id, product_id, total_amount, payment_status, created_at, order_group, address_id, size_name, size_price)
+            VALUES (%s, %s, %s, %s, NOW(), %s, %s, %s, %s)
+        """, (user_id, item["product_id"], total_item_price, "success", order_group, address_id,
+              item.get("size_name"), item.get("size_price")))
         order_ids.append(order_id)
 
     # ✅ Send combined HTML emails for all orders
@@ -754,6 +777,7 @@ def view_product(request, id):
 
     images = db.selectall("SELECT * FROM product_images WHERE product_id=%s", (id,))
     attributes = db.selectall("SELECT * FROM product_attributes WHERE product_id=%s", (id,))
+    sizes = db.selectall("SELECT * FROM product_sizes WHERE product_id=%s ORDER BY id ASC", (id,))
     # ✅ Group attributes in pairs for display (2 per row)
     grouped_attrs = []
     for i in range(0, len(attributes), 2):
@@ -815,6 +839,7 @@ def view_product(request, id):
         "images": images,
         "attributes": attributes,
         "grouped_attrs": grouped_attrs,
+        "sizes": sizes,
         "related_products": related_products,
         "reviews": reviews,
         "avg_rating": avg_rating,
@@ -1642,8 +1667,20 @@ def buy_now(request, product_id):
     total_weight = Decimal(str(product.get("weight") or 0))
     shipping_fee = (total_weight * cost_per_kg).quantize(Decimal("0.01"))
 
-    # ✅ Product price
-    product_price = Decimal(str(product["sale_price"] or product["price"]))
+    # ✅ Size (optional — passed as ?size_id= query param)
+    size_id = request.GET.get("size_id") or None
+    selected_size = None
+    if size_id:
+        selected_size = db.selectone(
+            "SELECT * FROM product_sizes WHERE id=%s AND product_id=%s",
+            (size_id, product_id)
+        )
+
+    # ✅ Product price (use size price if size selected)
+    if selected_size:
+        product_price = Decimal(str(selected_size["price"]))
+    else:
+        product_price = Decimal(str(product["sale_price"] or product["price"]))
 
     # ✅ Total (product + shipping)
     total_price = (product_price + shipping_fee).quantize(Decimal("0.01"))
@@ -1664,8 +1701,9 @@ def buy_now(request, product_id):
         "is_cart_checkout": False,
         "shipping_fee": shipping_fee,
         "cost_per_kg": cost_per_kg,
-        "total_price": total_price,     # ✅ now template total works
-        "subtotal": product_price,      # ✅ used for JS recalculations
+        "total_price": total_price,
+        "subtotal": product_price,
+        "selected_size": selected_size,
         "cart_count": get_cart_count(user_id),
         "wishlist_count": get_wishlist_count(user_id),
     })
@@ -1679,11 +1717,11 @@ def cart_checkout(request):
 
     user_id = request.session["user_id"]
 
-    # 🛒 Get all cart items (include product weight)
+    # 🛒 Get all cart items (include product weight and size info)
     items = db.selectall("""
         SELECT c.id AS cart_id, p.id AS product_id, p.title, p.price, p.sale_price, p.weight,
                (SELECT image FROM product_images WHERE product_id=p.id LIMIT 1) AS main_image,
-               c.quantity
+               c.quantity, c.size_name, c.size_price
         FROM cart c
         JOIN products p ON c.product_id = p.id
         WHERE c.user_id=%s
@@ -1693,10 +1731,11 @@ def cart_checkout(request):
         messages.warning(request, "Your cart is empty.")
         return redirect("cart")
 
-    # 🧮 Calculate subtotal (use Decimal for accuracy)
+    # 🧮 Calculate subtotal (use Decimal for accuracy, prefer size_price)
     subtotal = Decimal("0.00")
     for item in items:
-        price = Decimal(str(item["sale_price"] or item["price"]))
+        price = Decimal(str(item["size_price"] if item.get("size_price") else (item["sale_price"] or item["price"])))
+        item["effective_price"] = price
         item["total_price"] = (price * Decimal(str(item["quantity"]))).quantize(Decimal("0.01"))
         subtotal += item["total_price"]
 
@@ -1765,7 +1804,21 @@ def demo_payment(request, product_id):
         messages.error(request, "Product not found.")
         return redirect("index")
 
-    amount = product["sale_price"] or product["price"]
+    # Use size price if provided
+    size_id = request.POST.get("size_id") or None
+    size_name = None
+    if size_id:
+        size_row = db.selectone(
+            "SELECT * FROM product_sizes WHERE id=%s AND product_id=%s",
+            (size_id, product_id)
+        )
+        if size_row:
+            amount = size_row["price"]
+            size_name = size_row["size_name"]
+        else:
+            amount = product["sale_price"] or product["price"]
+    else:
+        amount = product["sale_price"] or product["price"]
 
     # 🪙 Check user total SuperCoins
     total_coins = db.selectone("SELECT COALESCE(SUM(coins_earned), 0) AS total FROM rewards WHERE user_id=%s", (user_id,))
@@ -1787,9 +1840,9 @@ def demo_payment(request, product_id):
 
     order_group = f"GRP-{int(datetime.now().timestamp())}-{get_random_string(4)}"
     order_id = db.insert_return_id("""
-        INSERT INTO orders (user_id, product_id, total_amount, payment_status, created_at, order_group, address_id)
-        VALUES (%s, %s, %s, %s, NOW(), %s, %s)
-    """, (user_id, product_id, amount, "success", order_group, address_id))
+        INSERT INTO orders (user_id, product_id, total_amount, payment_status, created_at, order_group, address_id, size_name)
+        VALUES (%s, %s, %s, %s, NOW(), %s, %s, %s)
+    """, (user_id, product_id, amount, "success", order_group, address_id, size_name))
 
     # ✅ Send HTML order email (user + admin + superadmin)
     try:
@@ -3211,6 +3264,16 @@ def add_products(request, category_id):
                 db.insert("INSERT INTO product_attributes (product_id, field_name, field_value) VALUES (%s,%s,%s)",
                           (product["id"], name, value))
 
+        # ✅ Sizes
+        size_names = request.POST.getlist("size_name[]")
+        size_prices = request.POST.getlist("size_price[]")
+        for sname, sprice in zip(size_names, size_prices):
+            if sname.strip() and sprice.strip():
+                db.insert(
+                    "INSERT INTO product_sizes (product_id, size_name, price) VALUES (%s,%s,%s)",
+                    (product["id"], sname.strip(), sprice.strip())
+                )
+
         messages.success(request, f"✅ Product '{title}' added successfully under {category['name']}")
         return redirect("add-productcategory", category_id=category_id)
 
@@ -3373,6 +3436,7 @@ def edit_product(request, id):
     brands = db.selectall("SELECT id, name FROM brands WHERE category_id=%s ORDER BY name ASC", (product["category_id"],))
     attributes = db.selectall("SELECT * FROM product_attributes WHERE product_id=%s", (id,))
     images = db.selectall("SELECT * FROM product_images WHERE product_id=%s", (id,))
+    sizes = db.selectall("SELECT * FROM product_sizes WHERE product_id=%s ORDER BY id ASC", (id,))
 
     if request.method == "POST":
         title = request.POST.get("title", "")
@@ -3406,6 +3470,17 @@ def edit_product(request, id):
                     (id, n, v)
                 )
 
+        # ✅ Handle sizes
+        db.delete("DELETE FROM product_sizes WHERE product_id=%s", (id,))
+        size_names = request.POST.getlist("size_name[]")
+        size_prices = request.POST.getlist("size_price[]")
+        for sname, sprice in zip(size_names, size_prices):
+            if sname.strip() and sprice.strip():
+                db.insert(
+                    "INSERT INTO product_sizes (product_id, size_name, price) VALUES (%s,%s,%s)",
+                    (id, sname.strip(), sprice.strip())
+                )
+
         # ✅ Handle image logic
         keep_ids = request.POST.getlist("keep_images[]")
         existing = db.selectall("SELECT id, image FROM product_images WHERE product_id=%s", (id,))
@@ -3437,6 +3512,7 @@ def edit_product(request, id):
         "brands": brands,
         "attributes": attributes,
         "images": images,
+        "sizes": sizes,
     })
      
 

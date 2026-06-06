@@ -33,7 +33,8 @@
                                     <a href="{% url 'view-product' item.product_id %}" class="text-inherit">
                                        <h6 class="mb-0">{{ item.title }}</h6>
                                     </a>
-                                    <span><small class="text-muted">₹{{ item.sale_price|default:item.price }}</small></span>
+                                    {% if item.size_name %}<small class="text-muted d-block">Size: {{ item.size_name }}</small>{% endif %}
+                                    <span><small class="text-muted">₹{{ item.effective_price|default:item.sale_price|default:item.price }}</small></span>
                                     <div class="mt-2 small lh-1">
                                        <a href="javascript:void(0);" onclick="removeItem({{ item.cart_id }})"
                                           class="text-decoration-none text-inherit">
