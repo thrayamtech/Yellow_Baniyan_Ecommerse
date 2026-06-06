@@ -617,8 +617,8 @@ def cart_demo_payment(request):
             (user_id, -discount, f"Used {discount} coins for cart discount"),
         )
 
-    # Get selected shipping address
-    address_id = request.POST.get("address_id")
+    # Get selected shipping address (convert empty string to None for INT column)
+    address_id = request.POST.get("address_id") or None
 
     # Generate a group ID to link all items from this cart checkout
     order_group = f"GRP-{int(datetime.now().timestamp())}-{get_random_string(4)}"
@@ -1835,8 +1835,8 @@ def demo_payment(request, product_id):
             (user_id, -discount, f"Used {discount} coins for discount"),
         )
 
-    # Get selected shipping address
-    address_id = request.POST.get("address_id")
+    # Get selected shipping address (convert empty string to None for INT column)
+    address_id = request.POST.get("address_id") or None
 
     order_group = f"GRP-{int(datetime.now().timestamp())}-{get_random_string(4)}"
     order_id = db.insert_return_id("""
