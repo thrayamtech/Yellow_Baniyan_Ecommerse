@@ -5046,8 +5046,8 @@ def sales_report(request):
 
     summary = db.selectone(f"""
         SELECT
-            COUNT(o.id) AS total_orders,
-            COALESCE(SUM(o.quantity), 0) AS total_items,
+            COUNT(DISTINCT o.order_group) AS total_orders,
+            COUNT(o.id) AS total_items,
             COALESCE(SUM(o.total_amount), 0) AS total_revenue
         FROM orders o
         JOIN products p ON o.product_id = p.id
@@ -5059,7 +5059,7 @@ def sales_report(request):
             p.title AS product_title,
             COALESCE(b.name, '—') AS brand_name,
             COALESCE(c.name, '—') AS category_name,
-            SUM(o.quantity) AS total_qty,
+            COUNT(o.id) AS total_qty,
             COALESCE(SUM(o.total_amount), 0) AS total_revenue,
             COUNT(o.id) AS order_count
         FROM orders o
