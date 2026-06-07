@@ -5023,10 +5023,10 @@ def superadmin_order_monitor(request):
 def sales_report(request):
     if "admin_id" not in request.session:
         return redirect("adminlogin")
-    admin = db.selectone("SELECT * FROM adminusers WHERE id=%s", (request.session["admin_id"],))
-    if not admin or not admin["is_superadmin"]:
-        messages.error(request, "Access denied.")
-        return redirect("admin-home")
+    admin_id = request.session["admin_id"]
+    admin = db.selectone("SELECT * FROM adminusers WHERE id=%s", (admin_id,))
+    if not admin:
+        return redirect("adminlogin")
 
     date_from = request.GET.get("from", "")
     date_to = request.GET.get("to", "")
@@ -5040,13 +5040,18 @@ def sales_report(request):
         date_filter += " AND DATE(o.created_at) <= %s"
         params.append(date_to)
 
+    vendor_filter = "" if admin["is_superadmin"] else " AND p.admin_id = %s"
+    if not admin["is_superadmin"]:
+        params.append(admin_id)
+
     summary = db.selectone(f"""
         SELECT
             COUNT(o.id) AS total_orders,
             COALESCE(SUM(o.quantity), 0) AS total_items,
             COALESCE(SUM(o.total_amount), 0) AS total_revenue
         FROM orders o
-        WHERE 1=1 {date_filter}
+        JOIN products p ON o.product_id = p.id
+        WHERE 1=1 {date_filter} {vendor_filter}
     """, tuple(params))
 
     by_product = db.selectall(f"""
@@ -5061,7 +5066,7 @@ def sales_report(request):
         JOIN products p ON o.product_id = p.id
         LEFT JOIN brands b ON p.brand_id = b.id
         LEFT JOIN categories c ON p.category_id = c.id
-        WHERE 1=1 {date_filter}
+        WHERE 1=1 {date_filter} {vendor_filter}
         GROUP BY p.id, p.title, b.name, c.name
         ORDER BY total_revenue DESC
     """, tuple(params))
@@ -5079,14 +5084,18 @@ def sales_report(request):
 def inventory_report(request):
     if "admin_id" not in request.session:
         return redirect("adminlogin")
-    admin = db.selectone("SELECT * FROM adminusers WHERE id=%s", (request.session["admin_id"],))
-    if not admin or not admin["is_superadmin"]:
-        messages.error(request, "Access denied.")
-        return redirect("admin-home")
+    admin_id = request.session["admin_id"]
+    admin = db.selectone("SELECT * FROM adminusers WHERE id=%s", (admin_id,))
+    if not admin:
+        return redirect("adminlogin")
 
     category_id = request.GET.get("category", "")
+
+    vendor_filter = "" if admin["is_superadmin"] else " AND p.admin_id = %s"
+    base_params = [] if admin["is_superadmin"] else [admin_id]
+
     cat_filter = ""
-    params = []
+    params = list(base_params)
     if category_id:
         cat_filter = " AND p.category_id = %s"
         params.append(category_id)
@@ -5102,11 +5111,18 @@ def inventory_report(request):
         LEFT JOIN brands b ON p.brand_id = b.id
         LEFT JOIN categories c ON p.category_id = c.id
         LEFT JOIN subcategories s ON p.subcategory_id = s.id
-        WHERE p.approved = 1 {cat_filter}
+        WHERE p.approved = 1 {vendor_filter} {cat_filter}
         ORDER BY p.stock ASC, p.title ASC
     """, tuple(params))
 
-    categories = db.selectall("SELECT * FROM categories ORDER BY name ASC")
+    if admin["is_superadmin"]:
+        categories = db.selectall("SELECT * FROM categories ORDER BY name ASC")
+    else:
+        categories = db.selectall("""
+            SELECT DISTINCT c.* FROM categories c
+            JOIN products p ON p.category_id = c.id
+            WHERE p.admin_id = %s ORDER BY c.name ASC
+        """, (admin_id,))
 
     total_products = len(products)
     out_of_stock = sum(1 for p in products if (p["stock"] or 0) == 0)
@@ -5129,17 +5145,20 @@ def inventory_report(request):
 def order_processing_report(request):
     if "admin_id" not in request.session:
         return redirect("adminlogin")
-    admin = db.selectone("SELECT * FROM adminusers WHERE id=%s", (request.session["admin_id"],))
-    if not admin or not admin["is_superadmin"]:
-        messages.error(request, "Access denied.")
-        return redirect("admin-home")
+    admin_id = request.session["admin_id"]
+    admin = db.selectone("SELECT * FROM adminusers WHERE id=%s", (admin_id,))
+    if not admin:
+        return redirect("adminlogin")
 
     date_from = request.GET.get("from", "")
     date_to = request.GET.get("to", "")
     status_filter_val = request.GET.get("status", "")
 
+    vendor_filter = "" if admin["is_superadmin"] else " AND p.admin_id = %s"
+    base_params = [] if admin["is_superadmin"] else [admin_id]
+
     date_filter = ""
-    params_summary = []
+    params_summary = list(base_params)
     if date_from:
         date_filter += " AND DATE(o.created_at) >= %s"
         params_summary.append(date_from)
@@ -5152,8 +5171,9 @@ def order_processing_report(request):
             COALESCE(t.status, 'Order Placed') AS status,
             COUNT(DISTINCT o.id) AS cnt
         FROM orders o
+        JOIN products p ON o.product_id = p.id
         LEFT JOIN order_tracking t ON t.order_id = o.id
-        WHERE 1=1 {date_filter}
+        WHERE 1=1 {vendor_filter} {date_filter}
         GROUP BY COALESCE(t.status, 'Order Placed')
         ORDER BY cnt DESC
     """, tuple(params_summary))
@@ -5184,7 +5204,7 @@ def order_processing_report(request):
         JOIN users u ON o.user_id = u.id
         JOIN products p ON o.product_id = p.id
         LEFT JOIN order_tracking t ON t.order_id = o.id
-        WHERE 1=1 {date_filter} {status_where}
+        WHERE 1=1 {vendor_filter} {date_filter} {status_where}
         ORDER BY o.created_at DESC
         LIMIT 500
     """, tuple(params_orders))

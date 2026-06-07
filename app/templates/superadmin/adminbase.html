@@ -443,7 +443,9 @@
         </a>
       </li>
 
-      <!-- Reports -->
+							{% endif %}
+
+      <!-- Reports — visible to all admins/vendors -->
       <li class="nav-item">
         <a class="nav-link {% if '/superadmin/reports/' in request.path %}{% else %}collapsed{% endif %}"
            href="#" data-bs-toggle="collapse" data-bs-target="#navReports"
@@ -472,7 +474,6 @@
           </ul>
         </div>
       </li>
-							{% endif %}
 							<!-- Nav item -->
 						</ul>
 					</div>
@@ -643,6 +644,9 @@
         </a>
       </li>
 
+							{% endif %}
+
+      <!-- Reports — visible to all admins/vendors -->
       <li class="nav-item">
         <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#navReportsMobile">
           <div class="d-flex align-items-center">
@@ -658,7 +662,6 @@
           </ul>
         </div>
       </li>
-							{% endif %}
 						</ul>
 					</div>
 				</div>
