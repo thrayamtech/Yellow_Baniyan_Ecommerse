@@ -154,10 +154,16 @@ urlpatterns = [
     path("admin-home/customers/", views.customers, name="customers"),
     path("admin-home/user-details/<int:user_id>/", views.get_user_details, name="get-user-details"),
     path("admin-home/toggle-vip/<int:user_id>/", views.toggle_vip, name="toggle-vip"),
+    path("admin-home/update-user-vip-discount/<int:user_id>/", views.update_user_vip_discount, name="update-user-vip-discount"),
 
     # Order PRoduct Urls
     path("admin-home/order/delete/", views.order_delete, name="order-delete"),
     path("superadmin/order-monitor/", views.superadmin_order_monitor, name="superadmin-order-monitor"),
+
+    # Reports
+    path("superadmin/reports/sales/", views.sales_report, name="sales-report"),
+    path("superadmin/reports/inventory/", views.inventory_report, name="inventory-report"),
+    path("superadmin/reports/order-processing/", views.order_processing_report, name="order-processing-report"),
 
     
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

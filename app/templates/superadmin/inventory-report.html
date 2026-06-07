@@ -1,0 +1,135 @@
+{% extends 'superadmin/adminbase.html' %}
+{% block title %}Inventory Report{% endblock %}
+{% block content %}
+<main class="main-content-wrapper">
+<div class="container-fluid py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+      <h2 class="fw-bold mb-0">Inventory / Stock Report</h2>
+      <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'admin-home' %}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Inventory Report</li>
+      </ol></nav>
+    </div>
+  </div>
+
+  <!-- Category Filter -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-body">
+      <form method="GET" class="row g-3 align-items-end">
+        <div class="col-md-5">
+          <label class="form-label fw-semibold">Filter by Category</label>
+          <select name="category" class="form-select">
+            <option value="">All Categories</option>
+            {% for cat in categories %}
+            <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>
+              {{ cat.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4 d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Filter</button>
+          <a href="{% url 'inventory-report' %}" class="btn btn-outline-secondary">Reset</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body text-center">
+          <div class="fs-2 fw-bold text-primary">{{ total_products }}</div>
+          <div class="text-muted small mt-1">Total Products</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body text-center">
+          <div class="fs-2 fw-bold text-success">{{ in_stock }}</div>
+          <div class="text-muted small mt-1">In Stock</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body text-center">
+          <div class="fs-2 fw-bold text-warning">{{ low_stock }}</div>
+          <div class="text-muted small mt-1">Low Stock (≤10)</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body text-center">
+          <div class="fs-2 fw-bold text-danger">{{ out_of_stock }}</div>
+          <div class="text-muted small mt-1">Out of Stock</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock Table -->
+  <div class="card shadow-sm">
+    <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+      <span>Product Stock Levels</span>
+      <span class="badge bg-secondary">{{ total_products }} products</span>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Product</th>
+              <th>Brand</th>
+              <th>Category</th>
+              <th>EAN Code</th>
+              <th class="text-center">Stock</th>
+              <th class="text-end">MRP (₹)</th>
+              <th class="text-end">Sale Price (₹)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in products %}
+            <tr class="{% if p.stock == 0 %}table-danger{% elif p.stock <= 10 %}table-warning{% endif %}">
+              <td>{{ forloop.counter }}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  {% if p.product_image %}
+                  <img src="/media/{{ p.product_image }}" width="36" height="36" class="rounded border object-fit-cover">
+                  {% endif %}
+                  <span class="fw-semibold">{{ p.title }}</span>
+                </div>
+              </td>
+              <td>{{ p.brand_name }}</td>
+              <td>{{ p.category_name }}</td>
+              <td><code>{{ p.ean_code|default:"—" }}</code></td>
+              <td class="text-center">
+                {% if p.stock == 0 %}
+                <span class="badge bg-danger">Out of Stock</span>
+                {% elif p.stock <= 10 %}
+                <span class="badge bg-warning text-dark">{{ p.stock }} (Low)</span>
+                {% else %}
+                <span class="badge bg-success">{{ p.stock }}</span>
+                {% endif %}
+              </td>
+              <td class="text-end">₹{{ p.price }}</td>
+              <td class="text-end">{{ p.sale_price|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="text-center py-4 text-muted">No products found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+</main>
+{% endblock %}

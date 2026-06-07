@@ -133,16 +133,48 @@
                       <form method="post" action="{% url 'order-list' %}">
                         {% csrf_token %}
                         <input type="hidden" name="order_id" value="{{ item.order_id }}">
-                        <div class="d-flex align-items-center justify-content-between">
-                          <label class="text-muted small mb-0 me-2">Status:</label>
-                          <select name="status" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+
+                        <!-- Status selector — any direction allowed -->
+                        <div class="mb-2">
+                          <label class="text-muted small mb-1 d-block">Status:</label>
+                          <select name="status" class="form-select form-select-sm status-select" data-order="{{ item.order_id }}">
                             {% for s in status_list %}
                             <option value="{{ s }}" {% if order.current_status == s %}selected{% endif %}>{{ s }}</option>
                             {% endfor %}
                           </select>
                         </div>
+
+                        <!-- Invoice Number — always visible -->
+                        <div class="mb-2">
+                          <label class="text-muted small mb-1 d-block">Invoice No:</label>
+                          <input type="text" name="invoice_number" class="form-control form-control-sm"
+                                 placeholder="e.g. INV-2026-001"
+                                 value="{{ item.invoice_number|default:'' }}">
+                        </div>
+
+                        <!-- Tracking Number — shown only when Shipped is selected -->
+                        <div class="mb-2 tracking-field" id="tracking-{{ item.order_id }}"
+                             style="{% if order.current_status != 'Shipped' %}display:none;{% endif %}">
+                          <label class="text-muted small mb-1 d-block">Tracking No:</label>
+                          <input type="text" name="tracking_number" class="form-control form-control-sm"
+                                 placeholder="e.g. TRK123456789"
+                                 value="{{ item.tracking_number|default:'' }}">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-sm w-100 mt-1">Update</button>
                       </form>
                     </div>
+                    {% else %}
+                    {% if item.tracking_number or item.invoice_number %}
+                    <div class="card-footer bg-transparent border-top pt-2">
+                      {% if item.invoice_number %}
+                      <small class="text-muted d-block">Invoice: <strong>{{ item.invoice_number }}</strong></small>
+                      {% endif %}
+                      {% if item.tracking_number %}
+                      <small class="text-muted d-block">Tracking: <strong>{{ item.tracking_number }}</strong></small>
+                      {% endif %}
+                    </div>
+                    {% endif %}
                     {% endif %}
                   </div>
                 </div>
@@ -165,5 +197,19 @@
     </div>
   </div>
 </main>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll(".status-select").forEach(function (sel) {
+    sel.addEventListener("change", function () {
+      const orderId = this.dataset.order;
+      const trackingDiv = document.getElementById("tracking-" + orderId);
+      if (trackingDiv) {
+        trackingDiv.style.display = this.value === "Shipped" ? "block" : "none";
+      }
+    });
+  });
+});
+</script>
 
 {% endblock %}

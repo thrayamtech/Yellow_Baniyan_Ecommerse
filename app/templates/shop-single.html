@@ -97,16 +97,36 @@
         </a>
         {% endif %}
 
-        <!-- 💰 Price -->
-        <div class="d-flex align-items-center mb-3">
+        <!-- 💰 Price & Discounts -->
+        <div class="mb-3">
           {% if sizes %}
-          <h4 class="text-dark mb-0 price-display">₹{{ sizes.0.price }}</h4>
+          <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+            <h4 class="text-dark mb-0 price-display">₹{{ sizes.0.price }}</h4>
+            <span class="text-decoration-line-through text-muted mrp-display">₹{{ product.price }}</span>
+            {% with disc=product.price|discount_percent:sizes.0.price %}
+            {% if disc > 0 %}
+            <span class="badge bg-danger discount-badge">{{ disc }}% Off</span>
+            {% else %}
+            <span class="badge bg-danger discount-badge" style="display:none;"></span>
+            {% endif %}
+            {% endwith %}
+          </div>
           {% elif product.sale_price and product.sale_price != product.price %}
-          <h4 class="text-dark me-3 mb-0 price-display">₹{{ product.sale_price }}</h4>
-          <span class="text-decoration-line-through text-muted">₹{{ product.price }}</span>
-          <small class="text-danger fw-semibold ms-2">{{ product.price|discount_percent:product.sale_price }}% Off</small>
+          <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+            <h4 class="text-dark mb-0 price-display">₹{{ product.sale_price }}</h4>
+            <span class="text-decoration-line-through text-muted">₹{{ product.price }}</span>
+            <span class="badge bg-danger">{{ product.price|discount_percent:product.sale_price }}% Off</span>
+          </div>
           {% else %}
-          <h4 class="text-dark mb-0 price-display">₹{{ product.sale_price|default:product.price }}</h4>
+          <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+            <h4 class="text-dark mb-0 price-display">₹{{ product.sale_price|default:product.price }}</h4>
+          </div>
+          {% endif %}
+
+          {% if vip and product.is_vip and vip_discount_pct > 0 %}
+          <div class="mt-1">
+            <span class="badge bg-warning text-dark"><i class="bi bi-star-fill me-1"></i>VIP Discount: {{ vip_discount_pct }}% Off for you</span>
+          </div>
           {% endif %}
         </div>
 
@@ -429,16 +449,26 @@
 </style>
 
 <script>
-  // Update displayed price when a size is selected
+  // Update price + discount badge when a size is selected
   document.addEventListener("DOMContentLoaded", function () {
     const sizeSelect = document.getElementById("sizeSelect");
     if (sizeSelect) {
+      const mrp = parseFloat("{{ product.price }}") || 0;
       sizeSelect.addEventListener("change", function () {
         const opt = this.options[this.selectedIndex];
-        const price = opt.dataset.price;
-        if (price) {
-          const priceEl = document.querySelector(".price-display");
-          if (priceEl) priceEl.textContent = "₹" + parseFloat(price).toFixed(2);
+        const sizePrice = parseFloat(opt.dataset.price);
+        if (!sizePrice) return;
+        const priceEl = document.querySelector(".price-display");
+        if (priceEl) priceEl.textContent = "₹" + sizePrice.toFixed(2);
+        const badge = document.querySelector(".discount-badge");
+        if (badge && mrp > 0) {
+          if (sizePrice < mrp) {
+            const pct = Math.round((mrp - sizePrice) / mrp * 100);
+            badge.textContent = pct + "% Off";
+            badge.style.display = "inline-block";
+          } else {
+            badge.style.display = "none";
+          }
         }
       });
     }

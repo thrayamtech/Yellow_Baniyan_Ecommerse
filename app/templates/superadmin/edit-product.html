@@ -68,7 +68,13 @@
                     <label class="form-label">Weight (in Kg)</label>
                     <input type="number" name="weight" value="{{ product.weight }}" class="form-control" min="0">
                 </div>
-                
+
+                <div class="mb-3 col-lg-6">
+                    <label class="form-label">EAN Code</label>
+                    <input type="text" name="ean_code" value="{{ product.ean_code|default:'' }}" class="form-control" placeholder="e.g. 1234567890123" maxlength="20">
+                    <small class="text-muted">International Article Number (barcode). Optional.</small>
+                </div>
+
                 <div class="mb-3 col-lg-12 mt-4">
                     <h4>Product Description</h4>
                     <textarea name="description" id="descriptionInput" class="form-control" rows="6"

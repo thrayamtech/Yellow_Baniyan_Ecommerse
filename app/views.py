@@ -62,11 +62,16 @@ def is_user_vip(user_id):
     return bool(user and user.get("is_vip"))
 
 
-def get_vip_discount_percent(product):
+def get_vip_discount_percent(product, user_id=None):
     """
     Returns the applicable VIP discount % for a VIP-tagged product.
-    Priority: product.vip_discount > brand.vip_discount > subcategory.vip_discount > master_vip_discount
+    Priority: user.vip_discount > product.vip_discount > brand.vip_discount > subcategory.vip_discount > master_vip_discount
     """
+    if user_id:
+        u = db.selectone("SELECT vip_discount FROM users WHERE id=%s", (user_id,))
+        if u and float(u.get("vip_discount") or 0) > 0:
+            return float(u["vip_discount"])
+
     if float(product.get("vip_discount") or 0) > 0:
         return float(product["vip_discount"])
 
@@ -631,7 +636,7 @@ def cart_demo_payment(request):
     for item in items:
         price = float(item["size_price"] if item.get("size_price") else (item["sale_price"] or item["price"]))
         if is_vip_user and item.get("is_vip"):
-            disc_pct = get_vip_discount_percent(item)
+            disc_pct = get_vip_discount_percent(item, user_id)
             if disc_pct > 0:
                 price = round(price * (1 - disc_pct / 100), 2)
         item["_final_price"] = price
@@ -869,6 +874,10 @@ def view_product(request, id):
         ORDER BY r.created_at DESC
     """, (id,))
 
+    vip_discount_pct = 0
+    if vip and product and product.get("is_vip"):
+        vip_discount_pct = get_vip_discount_percent(product, user_id)
+
     return render(request, "shop-single.html", {
         "product": product,
         "images": images,
@@ -879,6 +888,8 @@ def view_product(request, id):
         "reviews": reviews,
         "avg_rating": avg_rating,
         "total_reviews": total_reviews,
+        "vip": vip,
+        "vip_discount_pct": vip_discount_pct,
         "cart_count": get_cart_count(request.session["user_id"]) if "user_id" in request.session else 0,
         "wishlist_count": get_wishlist_count(request.session["user_id"]) if "user_id" in request.session else 0,
     })
@@ -1749,7 +1760,7 @@ def buy_now(request, product_id):
     vip_discount_pct = 0
     vip_discount_amount = Decimal("0.00")
     if is_user_vip(user_id) and product.get("is_vip"):
-        vip_discount_pct = get_vip_discount_percent(product)
+        vip_discount_pct = get_vip_discount_percent(product, user_id)
         if vip_discount_pct > 0:
             vip_discount_amount = (product_price * Decimal(str(vip_discount_pct)) / Decimal("100")).quantize(Decimal("0.01"))
 
@@ -1819,7 +1830,7 @@ def cart_checkout(request):
         subtotal += item["total_price"]
 
         if is_vip_user and item.get("is_vip"):
-            disc_pct = get_vip_discount_percent(item)
+            disc_pct = get_vip_discount_percent(item, user_id)
             if disc_pct > 0:
                 item_vip_disc = (item["total_price"] * Decimal(str(disc_pct)) / Decimal("100")).quantize(Decimal("0.01"))
                 total_vip_discount += item_vip_disc
@@ -1910,7 +1921,7 @@ def demo_payment(request, product_id):
 
     # Apply VIP discount if user is VIP and product is VIP-tagged
     if is_user_vip(user_id) and product.get("is_vip"):
-        vip_disc_pct = get_vip_discount_percent(product)
+        vip_disc_pct = get_vip_discount_percent(product, user_id)
         if vip_disc_pct > 0:
             amount = round(amount * (1 - vip_disc_pct / 100), 2)
 
@@ -2331,7 +2342,15 @@ def customers(request):
         messages.error(request, "Access denied.")
         return redirect("admin-home")
 
-    users = db.selectall("SELECT * FROM users ORDER BY created_at DESC")
+    users = db.selectall("""
+        SELECT u.*,
+            (SELECT CONCAT_WS(', ', a.address_line1, a.city, a.state)
+             FROM addresses a
+             WHERE a.user_id = u.id AND a.is_default = 1
+             LIMIT 1) AS default_address
+        FROM users u
+        ORDER BY u.created_at DESC
+    """)
 
     return render(request, "superadmin/customers.html", {
         "admin": admin,
@@ -2355,6 +2374,27 @@ def toggle_vip(request, user_id):
     new_status = not user.get("is_vip", False)
     db.update("UPDATE users SET is_vip=%s WHERE id=%s", (new_status, user_id))
     return JsonResponse({"status": "success", "is_vip": new_status})
+
+
+@require_POST
+def update_user_vip_discount(request, user_id):
+    """Superadmin — set per-user VIP discount percentage."""
+    if "admin_id" not in request.session:
+        return JsonResponse({"status": "error", "message": "Unauthorized"}, status=403)
+
+    admin = db.selectone("SELECT * FROM adminusers WHERE id=%s", (request.session["admin_id"],))
+    if not admin or not admin["is_superadmin"]:
+        return JsonResponse({"status": "error", "message": "Access denied"}, status=403)
+
+    try:
+        discount = float(request.POST.get("vip_discount", 0) or 0)
+        if discount < 0 or discount > 100:
+            return JsonResponse({"status": "error", "message": "Discount must be 0–100"}, status=400)
+    except ValueError:
+        return JsonResponse({"status": "error", "message": "Invalid value"}, status=400)
+
+    db.update("UPDATE users SET vip_discount=%s WHERE id=%s", (discount, user_id))
+    return JsonResponse({"status": "success", "vip_discount": discount})
 
 
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
@@ -3328,6 +3368,7 @@ def add_products(request, category_id):
         meta_description = request.POST.get("meta_description", "")
         is_vip = request.POST.get("is_vip") == "on"
         vip_discount = request.POST.get("vip_discount", "0") or "0"
+        ean_code = request.POST.get("ean_code", "").strip() or None
 
         approved = admin["is_superadmin"]
         pending_approval = not admin["is_superadmin"]
@@ -3335,12 +3376,12 @@ def add_products(request, category_id):
         db.insert("""
             INSERT INTO products
             (title, category_id, subcategory_id, brand_id, price, sale_price, stock, weight, description,
-             meta_title, meta_description, admin_id, approved, pending_approval, is_vip, vip_discount)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+             meta_title, meta_description, admin_id, approved, pending_approval, is_vip, vip_discount, ean_code)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             title, category_id, subcategory_id, brand_id, price, sale_price, stock, weight,
             description, meta_title, meta_description, admin_id,
-            approved, pending_approval, is_vip, vip_discount
+            approved, pending_approval, is_vip, vip_discount, ean_code
         ))
 
         product = db.selectone("SELECT * FROM products ORDER BY id DESC LIMIT 1")
@@ -3550,15 +3591,16 @@ def edit_product(request, id):
         meta_description = request.POST.get("meta_description", "")
 
         vip_discount = request.POST.get("vip_discount", "0") or "0"
+        ean_code = request.POST.get("ean_code", "").strip() or None
 
         # ✅ Update product info
         db.update("""
             UPDATE products
             SET title=%s, subcategory_id=%s, brand_id=%s, price=%s, sale_price=%s, stock=%s, weight=%s,
-                description=%s, meta_title=%s, meta_description=%s, vip_discount=%s
+                description=%s, meta_title=%s, meta_description=%s, vip_discount=%s, ean_code=%s
             WHERE id=%s
         """, (title, subcategory_id, brand_id, price, sale_price, stock, weight,
-              description, meta_title, meta_description, vip_discount, id))
+              description, meta_title, meta_description, vip_discount, ean_code, id))
 
         # ✅ Handle custom fields
         db.delete("DELETE FROM product_attributes WHERE product_id=%s", (id,))
@@ -4642,11 +4684,14 @@ def order_list(request):
     admin_id = request.session["admin_id"]
     admin = db.selectone("SELECT * FROM adminusers WHERE id=%s", (admin_id,))
 
-    # ✅ Vendor (non-superadmin) can update tracking status
-    if request.method == "POST" and request.POST.get("status") and not admin["is_superadmin"]:
+    # ✅ Vendor (non-superadmin) can update tracking status, tracking number, invoice number
+    if request.method == "POST" and not admin["is_superadmin"]:
         order_id = request.POST.get("order_id")
         new_status = request.POST.get("status")
-        if order_id and new_status:
+        tracking_number = request.POST.get("tracking_number", "").strip() or None
+        invoice_number = request.POST.get("invoice_number", "").strip() or None
+
+        if order_id:
             check = db.selectone("""
                 SELECT o.id
                 FROM orders o
@@ -4657,12 +4702,30 @@ def order_list(request):
                 messages.warning(request, "You cannot update another vendor's order.")
                 return redirect("order-list")
 
-            existing = db.selectone("SELECT * FROM order_tracking WHERE order_id=%s", (order_id,))
-            if existing:
-                db.update("UPDATE order_tracking SET status=%s, updated_at=NOW() WHERE order_id=%s", (new_status, order_id))
-            else:
-                db.insert("INSERT INTO order_tracking (order_id, status, updated_at) VALUES (%s,%s,NOW())", (order_id, new_status))
-            messages.success(request, f"Order #{order_id} updated to {new_status}.")
+            # Update status in order_tracking
+            if new_status:
+                existing = db.selectone("SELECT * FROM order_tracking WHERE order_id=%s", (order_id,))
+                if existing:
+                    db.update("UPDATE order_tracking SET status=%s, updated_at=NOW() WHERE order_id=%s", (new_status, order_id))
+                else:
+                    db.insert("INSERT INTO order_tracking (order_id, status, updated_at) VALUES (%s,%s,NOW())", (order_id, new_status))
+
+            # Update tracking number and invoice number on the order
+            update_fields = []
+            update_params = []
+            if tracking_number is not None:
+                update_fields.append("tracking_number=%s")
+                update_params.append(tracking_number)
+            if invoice_number is not None:
+                update_fields.append("invoice_number=%s")
+                update_params.append(invoice_number)
+            if update_fields:
+                db.update(
+                    f"UPDATE orders SET {', '.join(update_fields)} WHERE id=%s",
+                    tuple(update_params) + (order_id,)
+                )
+
+            messages.success(request, f"Order #{order_id} updated successfully.")
             return redirect("order-list")
 
     # ✅ Fetch orders grouped by order_group (cart orders clubbed together)
@@ -4706,6 +4769,8 @@ def order_list(request):
             items = db.selectall(f"""
                 SELECT
                     o.id AS order_id,
+                    o.tracking_number,
+                    o.invoice_number,
                     p.title AS product_title,
                     p.price, p.sale_price,
                     b.name AS brand_name,
@@ -4719,6 +4784,8 @@ def order_list(request):
             items = db.selectall(f"""
                 SELECT
                     o.id AS order_id,
+                    o.tracking_number,
+                    o.invoice_number,
                     p.title AS product_title,
                     p.price, p.sale_price,
                     b.name AS brand_name,
@@ -4950,10 +5017,195 @@ def superadmin_order_monitor(request):
 
 
 
+# ─────────────── REPORTS ───────────────
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def sales_report(request):
+    if "admin_id" not in request.session:
+        return redirect("adminlogin")
+    admin = db.selectone("SELECT * FROM adminusers WHERE id=%s", (request.session["admin_id"],))
+    if not admin or not admin["is_superadmin"]:
+        messages.error(request, "Access denied.")
+        return redirect("admin-home")
+
+    date_from = request.GET.get("from", "")
+    date_to = request.GET.get("to", "")
+
+    date_filter = ""
+    params = []
+    if date_from:
+        date_filter += " AND DATE(o.created_at) >= %s"
+        params.append(date_from)
+    if date_to:
+        date_filter += " AND DATE(o.created_at) <= %s"
+        params.append(date_to)
+
+    summary = db.selectone(f"""
+        SELECT
+            COUNT(o.id) AS total_orders,
+            COALESCE(SUM(o.quantity), 0) AS total_items,
+            COALESCE(SUM(o.total_amount), 0) AS total_revenue
+        FROM orders o
+        WHERE 1=1 {date_filter}
+    """, tuple(params))
+
+    by_product = db.selectall(f"""
+        SELECT
+            p.title AS product_title,
+            COALESCE(b.name, '—') AS brand_name,
+            COALESCE(c.name, '—') AS category_name,
+            SUM(o.quantity) AS total_qty,
+            COALESCE(SUM(o.total_amount), 0) AS total_revenue,
+            COUNT(o.id) AS order_count
+        FROM orders o
+        JOIN products p ON o.product_id = p.id
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE 1=1 {date_filter}
+        GROUP BY p.id, p.title, b.name, c.name
+        ORDER BY total_revenue DESC
+    """, tuple(params))
+
+    return render(request, "superadmin/sales-report.html", {
+        "admin": admin,
+        "summary": summary,
+        "by_product": by_product,
+        "date_from": date_from,
+        "date_to": date_to,
+    })
+
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def inventory_report(request):
+    if "admin_id" not in request.session:
+        return redirect("adminlogin")
+    admin = db.selectone("SELECT * FROM adminusers WHERE id=%s", (request.session["admin_id"],))
+    if not admin or not admin["is_superadmin"]:
+        messages.error(request, "Access denied.")
+        return redirect("admin-home")
+
+    category_id = request.GET.get("category", "")
+    cat_filter = ""
+    params = []
+    if category_id:
+        cat_filter = " AND p.category_id = %s"
+        params.append(category_id)
+
+    products = db.selectall(f"""
+        SELECT
+            p.id, p.title, p.price, p.sale_price, p.stock, p.ean_code,
+            COALESCE(b.name, '—') AS brand_name,
+            COALESCE(c.name, '—') AS category_name,
+            COALESCE(s.name, '—') AS subcategory_name,
+            (SELECT image FROM product_images WHERE product_id=p.id LIMIT 1) AS product_image
+        FROM products p
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN subcategories s ON p.subcategory_id = s.id
+        WHERE p.approved = 1 {cat_filter}
+        ORDER BY p.stock ASC, p.title ASC
+    """, tuple(params))
+
+    categories = db.selectall("SELECT * FROM categories ORDER BY name ASC")
+
+    total_products = len(products)
+    out_of_stock = sum(1 for p in products if (p["stock"] or 0) == 0)
+    low_stock = sum(1 for p in products if 0 < (p["stock"] or 0) <= 10)
+    in_stock = total_products - out_of_stock - low_stock
+
+    return render(request, "superadmin/inventory-report.html", {
+        "admin": admin,
+        "products": products,
+        "categories": categories,
+        "selected_category": category_id,
+        "total_products": total_products,
+        "out_of_stock": out_of_stock,
+        "low_stock": low_stock,
+        "in_stock": in_stock,
+    })
+
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def order_processing_report(request):
+    if "admin_id" not in request.session:
+        return redirect("adminlogin")
+    admin = db.selectone("SELECT * FROM adminusers WHERE id=%s", (request.session["admin_id"],))
+    if not admin or not admin["is_superadmin"]:
+        messages.error(request, "Access denied.")
+        return redirect("admin-home")
+
+    date_from = request.GET.get("from", "")
+    date_to = request.GET.get("to", "")
+    status_filter_val = request.GET.get("status", "")
+
+    date_filter = ""
+    params_summary = []
+    if date_from:
+        date_filter += " AND DATE(o.created_at) >= %s"
+        params_summary.append(date_from)
+    if date_to:
+        date_filter += " AND DATE(o.created_at) <= %s"
+        params_summary.append(date_to)
+
+    status_counts = db.selectall(f"""
+        SELECT
+            COALESCE(t.status, 'Order Placed') AS status,
+            COUNT(DISTINCT o.id) AS cnt
+        FROM orders o
+        LEFT JOIN order_tracking t ON t.order_id = o.id
+        WHERE 1=1 {date_filter}
+        GROUP BY COALESCE(t.status, 'Order Placed')
+        ORDER BY cnt DESC
+    """, tuple(params_summary))
+
+    status_where = ""
+    params_orders = list(params_summary)
+    if status_filter_val:
+        if status_filter_val == "Order Placed":
+            status_where = " AND (t.status = 'Order Placed' OR t.status IS NULL)"
+        else:
+            status_where = " AND t.status = %s"
+            params_orders.append(status_filter_val)
+
+    orders = db.selectall(f"""
+        SELECT
+            o.id,
+            o.created_at,
+            o.total_amount,
+            o.payment_method,
+            o.payment_status,
+            u.first_name, u.last_name, u.email,
+            p.title AS product_title,
+            COALESCE(t.status, 'Order Placed') AS order_status,
+            t.updated_at AS status_updated_at,
+            o.tracking_number,
+            o.invoice_number
+        FROM orders o
+        JOIN users u ON o.user_id = u.id
+        JOIN products p ON o.product_id = p.id
+        LEFT JOIN order_tracking t ON t.order_id = o.id
+        WHERE 1=1 {date_filter} {status_where}
+        ORDER BY o.created_at DESC
+        LIMIT 500
+    """, tuple(params_orders))
+
+    status_list = ['Order Placed', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled']
+
+    return render(request, "superadmin/order-processing-report.html", {
+        "admin": admin,
+        "status_counts": status_counts,
+        "orders": orders,
+        "date_from": date_from,
+        "date_to": date_to,
+        "status_filter_val": status_filter_val,
+        "status_list": status_list,
+    })
+
+
 def sellers(request):
     if "admin_id" not in request.session:
         return redirect("adminlogin")
-    
+
     admin = db.selectone("SELECT * FROM adminusers WHERE id=%s", (request.session["admin_id"],))
     if not admin or not admin["is_superadmin"]:
         messages.error(request, "Access denied. Super admin only.")

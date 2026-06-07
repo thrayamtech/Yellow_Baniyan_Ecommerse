@@ -434,13 +434,43 @@
 							</li>
 
 							<li class="nav-item">
-        <a class="nav-link {% if request.path == '/superadmin/alert-settings/' %}active{% endif %}" 
+        <a class="nav-link {% if request.path == '/superadmin/alert-settings/' %}active{% endif %}"
            href="{% url 'manage-alert-settings' %}">
           <div class="d-flex align-items-center">
 										<span class="nav-link-icon"><i class="bi bi-bell"></i></span>
 										<span class="nav-link-text">Email Settings</span>
 									</div>
         </a>
+      </li>
+
+      <!-- Reports -->
+      <li class="nav-item">
+        <a class="nav-link {% if '/superadmin/reports/' in request.path %}{% else %}collapsed{% endif %}"
+           href="#" data-bs-toggle="collapse" data-bs-target="#navReports"
+           aria-expanded="{% if '/superadmin/reports/' in request.path %}true{% else %}false{% endif %}"
+           aria-controls="navReports">
+          <div class="d-flex align-items-center">
+            <span class="nav-link-icon"><i class="bi bi-bar-chart-line"></i></span>
+            <span class="nav-link-text">Reports</span>
+          </div>
+        </a>
+        <div id="navReports" class="collapse {% if '/superadmin/reports/' in request.path %}show{% endif %}"
+             data-bs-parent="#sideNavbar">
+          <ul class="nav flex-column">
+            <li class="nav-item">
+              <a class="nav-link {% if request.path == '/superadmin/reports/sales/' %}active{% endif %}"
+                 href="{% url 'sales-report' %}">Sales Report</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.path == '/superadmin/reports/inventory/' %}active{% endif %}"
+                 href="{% url 'inventory-report' %}">Inventory Report</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.path == '/superadmin/reports/order-processing/' %}active{% endif %}"
+                 href="{% url 'order-processing-report' %}">Order Processing</a>
+            </li>
+          </ul>
+        </div>
       </li>
 							{% endif %}
 							<!-- Nav item -->
@@ -604,7 +634,7 @@
 								</a>
 							</li>
 <li class="nav-item">
-        <a class="nav-link" 
+        <a class="nav-link"
            href="{% url 'manage-alert-settings' %}">
           <div class="d-flex align-items-center">
 										<span class="nav-link-icon"><i class="bi bi-bell"></i></span>
@@ -613,6 +643,21 @@
         </a>
       </li>
 
+      <li class="nav-item">
+        <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#navReportsMobile">
+          <div class="d-flex align-items-center">
+            <span class="nav-link-icon"><i class="bi bi-bar-chart-line"></i></span>
+            <span class="nav-link-text">Reports</span>
+          </div>
+        </a>
+        <div id="navReportsMobile" class="collapse" data-bs-parent="#sideNavbar">
+          <ul class="nav flex-column">
+            <li class="nav-item"><a class="nav-link" href="{% url 'sales-report' %}">Sales Report</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'inventory-report' %}">Inventory Report</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'order-processing-report' %}">Order Processing</a></li>
+          </ul>
+        </div>
+      </li>
 							{% endif %}
 						</ul>
 					</div>
